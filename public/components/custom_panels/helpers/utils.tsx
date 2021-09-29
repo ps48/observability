@@ -13,6 +13,8 @@ import dateMath from '@elastic/datemath';
 import { ShortDate } from '@elastic/eui';
 import { DurationRange } from '@elastic/eui/src/components/date_picker/types';
 import _ from 'lodash';
+import { Moment } from 'moment-timezone';
+import { ConsoleAppender } from '../../../../../../src/core/server/logging/appenders/console/console_appender';
 import { VisualizationType } from '../../../../common/constants/custom_panels';
 import { PPL_DATE_FORMAT, PPL_INDEX_REGEX } from '../../../../common/constants/shared';
 import PPLService from '../../../services/requests/ppl';
@@ -27,9 +29,16 @@ export const isNameValid = (name: string) => {
 };
 
 // DateTime convertor to required format
-export const convertDateTime = (datetime: string, isStart = true) => {
-  if (isStart) return dateMath.parse(datetime).format(PPL_DATE_FORMAT);
-  return dateMath.parse(datetime, { roundUp: true }).format(PPL_DATE_FORMAT);
+export const convertDateTime = (datetime: string, isStart = true, formatted = true) => {
+  let returnTime: undefined | Moment;
+  if (isStart) {
+    returnTime = dateMath.parse(datetime);
+  } else {
+    returnTime = dateMath.parse(datetime, { roundUp: true });
+  }
+
+  if (formatted) return returnTime.format(PPL_DATE_FORMAT);
+  return returnTime;
 };
 
 // Builds Final Query by adding time and query filters to the original visualization query

@@ -12,6 +12,7 @@
 import {
   EuiBreadcrumb,
   EuiButton,
+  EuiContextMenu,
   EuiFieldText,
   EuiFlexGroup,
   EuiFlexItem,
@@ -21,6 +22,7 @@ import {
   EuiPageContentBody,
   EuiPageHeader,
   EuiPageHeaderSection,
+  EuiPopover,
   EuiSpacer,
   EuiSuperDatePicker,
   EuiSuperDatePickerProps,
@@ -51,6 +53,7 @@ import { DurationRange } from '@elastic/eui/src/components/date_picker/types';
 import { UI_DATE_FORMAT } from '../../../common/constants/shared';
 import { ChangeEvent } from 'react';
 import moment from 'moment';
+import { AddVisualizationFlyout } from './panel_modules/add_visualization_flyout';
 
 /*
  * "CustomPanelsView" module used to render an Operational Panel
@@ -98,11 +101,40 @@ export const CustomPanelView = ({
   const [editMode, setEditMode] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false); // Modal Toggle
   const [modalLayout, setModalLayout] = useState(<EuiOverlayMask></EuiOverlayMask>); // Modal Layout
+  const [isVizPopoverOpen, setVizPopoverOpen] = useState(false); // Add Visualization Popover
+  const [isFlyoutVisible, setIsFlyoutVisible] = useState(false); // Add Visualization Flyout
 
   // DateTimePicker States
   const [recentlyUsedRanges, setRecentlyUsedRanges] = useState<DurationRange[]>([]);
   const [start, setStart] = useState<ShortDate>('now-30m');
   const [end, setEnd] = useState<ShortDate>('now');
+
+  const vizContextPanels = [
+    {
+      id: 0,
+      title: 'Add Visualization',
+      items: [
+        {
+          name: 'Select Existing Visualization',
+          onClick: () => {
+            addVizWindow();
+          },
+        },
+        {
+          name: 'Create New Visualization',
+          onClick: () => {
+            advancedVisualization();
+          },
+        },
+      ],
+    },
+  ];
+
+  const advancedVisualization = () => {
+    closeVizPopover();
+    //NOTE: Add Redux functions to pass pplquery and time filters to events page
+    window.location.assign('#/explorer/events');
+  };
 
   // Fetch Panel by id
   const fetchCustomPanel = async () => {
@@ -119,6 +151,14 @@ export const CustomPanelView = ({
       .catch((err) => {
         console.error('Issue in fetching the operational panels', err);
       });
+  };
+
+  const onPopoverClick = () => {
+    setVizPopoverOpen(!isVizPopoverOpen);
+  };
+
+  const closeVizPopover = () => {
+    setVizPopoverOpen(false);
   };
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -179,13 +219,16 @@ export const CustomPanelView = ({
   };
 
   const closeVizWindow = () => {
-    setShowVizPanel(false);
+    //setShowVizPanel(false);
+    setIsFlyoutVisible(false);
     setAddVizDisabled(false);
     checkDisabledInputs();
   };
 
   const addVizWindow = () => {
-    setShowVizPanel(true);
+    // setShowVizPanel(true);
+    closeVizPopover();
+    setIsFlyoutVisible(true);
     setAddVizDisabled(true);
     setInputDisabled(true);
   };
@@ -272,6 +315,35 @@ export const CustomPanelView = ({
     //NOTE: Make a backend call to Delete Visualization
     closeModal();
   };
+
+  //Add Visualization Button
+  const addVisualizationButton = (
+    <EuiButton
+      iconType="arrowDown"
+      iconSide="right"
+      disabled={addVizDisabled}
+      onClick={onPopoverClick}
+      fill
+    >
+      Add Visualization
+    </EuiButton>
+  );
+
+  let flyout;
+  if (isFlyoutVisible) {
+    flyout = (
+      <AddVisualizationFlyout
+        closeVizWindow={closeVizWindow}
+        start={start}
+        end={end}
+        setToast={setToast}
+        http={http}
+        pplService={pplService}
+        panelVisualizations={panelVisualizations}
+        setPanelVisualizations={setPanelVisualizations}
+      />
+    );
+  }
 
   // Fetch the custom panel on Initial Mount
   useEffect(() => {
@@ -374,16 +446,27 @@ export const CustomPanelView = ({
                   Refresh
                 </EuiButton>
               </EuiFlexItem>
-              <EuiFlexItem grow={false} onClick={addVizWindow}>
-                <EuiButton disabled={addVizDisabled} fill>
-                  Add visualization
-                </EuiButton>
+              <EuiFlexItem grow={false}>
+                <EuiPopover
+                  id="addVisualizationContextMenu"
+                  button={addVisualizationButton}
+                  isOpen={isVizPopoverOpen}
+                  closePopover={closeVizPopover}
+                  panelPaddingSize="none"
+                  anchorPosition="downLeft"
+                >
+                  <EuiContextMenu initialPanelId={0} panels={vizContextPanels} />
+                </EuiPopover>
               </EuiFlexItem>
             </EuiFlexGroup>
             <EuiSpacer size="l" />
             {panelVisualizations.length == 0 ? (
               !showVizPanel && (
-                <EmptyPanelView addVizWindow={addVizWindow} addVizDisabled={addVizDisabled} />
+                <EmptyPanelView
+                  addVizWindow={addVizWindow}
+                  addVizDisabled={addVizDisabled}
+                  vizContextPanels={vizContextPanels}
+                />
               )
             ) : (
               <PanelGrid
@@ -400,7 +483,7 @@ export const CustomPanelView = ({
               />
             )}
             <>
-              {showVizPanel && (
+              {/* {showVizPanel && (
                 <AddVizView
                   closeVizWindow={closeVizWindow}
                   pplService={pplService}
@@ -408,12 +491,13 @@ export const CustomPanelView = ({
                   setPanelVisualizations={setPanelVisualizations}
                   setToast={setToast}
                 />
-              )}
+              )} */}
             </>
           </EuiPageContentBody>
         </EuiPageBody>
       </EuiPage>
       {isModalVisible && modalLayout}
+      {flyout}
     </div>
   );
 };

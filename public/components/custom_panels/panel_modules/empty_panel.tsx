@@ -9,22 +9,54 @@
  * GitHub history for details.
  */
 
-import { EuiSpacer, EuiText, EuiFlexGroup, EuiFlexItem, EuiButton } from '@elastic/eui';
-import React from 'react';
+import {
+  EuiSpacer,
+  EuiText,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiButton,
+  EuiContextMenuPanelDescriptor,
+  EuiPopover,
+  EuiContextMenu,
+} from '@elastic/eui';
+import React, { useState } from 'react';
 
 /*
-* EmptyPanelView
-* This Sub-component is shown to the user when a operational panel is empty
-* Props:
-* addVizWindow -> This function shows the add visualization window in operational panels view
-*/
+ * EmptyPanelView
+ * This Sub-component is shown to the user when a operational panel is empty
+ * Props:
+ * addVizWindow -> This function shows the add visualization window in operational panels view
+ */
 
 type Props = {
   addVizWindow: () => void;
   addVizDisabled: boolean;
+  vizContextPanels: EuiContextMenuPanelDescriptor[] | undefined;
 };
 
-export const EmptyPanelView = ({ addVizWindow, addVizDisabled }: Props) => {
+export const EmptyPanelView = ({ addVizWindow, addVizDisabled, vizContextPanels }: Props) => {
+  const [isVizPopoverOpen, setVizPopoverOpen] = useState(false); // Add Visualization Popover
+
+  const onPopoverClick = () => {
+    setVizPopoverOpen(!isVizPopoverOpen);
+  };
+
+  const closeVizPopover = () => {
+    setVizPopoverOpen(false);
+  };
+
+  //Add Visualization Button
+  const addVisualizationButton = (
+    <EuiButton
+      iconType="arrowDown"
+      iconSide="right"
+      disabled={addVizDisabled}
+      onClick={onPopoverClick}
+    >
+      Add Visualization
+    </EuiButton>
+  );
+
   return (
     <div>
       <EuiSpacer size="xxl" />
@@ -38,9 +70,16 @@ export const EmptyPanelView = ({ addVizWindow, addVizDisabled }: Props) => {
       <EuiSpacer size="m" />
       <EuiFlexGroup justifyContent="center">
         <EuiFlexItem grow={false}>
-          <EuiButton fullWidth={false} disabled={addVizDisabled} fill onClick={addVizWindow}>
-            Add Visualization
-          </EuiButton>
+            <EuiPopover
+              id="addVisualizationContextMenu"
+              button={addVisualizationButton}
+              isOpen={isVizPopoverOpen}
+              closePopover={closeVizPopover}
+              panelPaddingSize="none"
+              anchorPosition="downLeft"
+            >
+              <EuiContextMenu initialPanelId={0} panels={vizContextPanels} />
+            </EuiPopover>
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="xxl" />

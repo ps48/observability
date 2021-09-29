@@ -44,12 +44,12 @@ export function PanelsRouter(router: IRouter) {
           dateCreated: '2021-07-19T21:01:14.871Z',
           dateModified: '2021-07-19T21:01:14.871Z',
         },
-        {
-          name: 'Demo Panel 3',
-          id: 'AUJFBY674',
-          dateCreated: '2021-07-19T21:01:14.871Z',
-          dateModified: '2021-07-19T21:01:14.871Z',
-        },
+        // {
+        //   name: 'Demo Panel 3',
+        //   id: 'AUJFBY674',
+        //   dateCreated: '2021-07-19T21:01:14.871Z',
+        //   dateModified: '2021-07-19T21:01:14.871Z',
+        // },
       ];
       try {
         return response.ok({
@@ -67,7 +67,7 @@ export function PanelsRouter(router: IRouter) {
     }
   );
 
-  // Fetch the required panel by id 
+  // Fetch the required panel by id
   // returns a panel object
   router.get(
     {
@@ -187,29 +187,29 @@ export function PanelsRouter(router: IRouter) {
         };
       }
 
-      if (request.params.panelId == 'AUJFBY674') {
-        panelObject = {
-          panel: {
-            name: 'Demo Panel 3',
-            dateCreated: '2021-07-19T21:01:14.871Z',
-            dateModified: '2021-07-19T21:01:14.871Z',
-            visualizations: [],
-            filters: [],
-            timeRange: {
-              to: 'now',
-              from: 'now-1d',
-            },
-            queryFilter: {
-              query: 'where Carrier=&#39;OpenSearch-Air&#39;',
-              language: 'ppl',
-            },
-            refreshConfig: {
-              pause: true,
-              value: 15,
-            },
-          },
-        };
-      }
+      // if (request.params.panelId == 'AUJFBY674') {
+      //   panelObject = {
+      //     panel: {
+      //       name: 'Demo Panel 3',
+      //       dateCreated: '2021-07-19T21:01:14.871Z',
+      //       dateModified: '2021-07-19T21:01:14.871Z',
+      //       visualizations: [],
+      //       filters: [],
+      //       timeRange: {
+      //         to: 'now',
+      //         from: 'now-1d',
+      //       },
+      //       queryFilter: {
+      //         query: 'where Carrier=&#39;OpenSearch-Air&#39;',
+      //         language: 'ppl',
+      //       },
+      //       refreshConfig: {
+      //         pause: true,
+      //         value: 15,
+      //       },
+      //     },
+      //   };
+      // }
 
       try {
         return response.ok({
@@ -260,7 +260,7 @@ export function PanelsRouter(router: IRouter) {
     }
   );
 
-  // rename an existing panel 
+  // rename an existing panel
   router.patch(
     {
       path: `${API_PREFIX}/panels/rename`,
@@ -294,7 +294,7 @@ export function PanelsRouter(router: IRouter) {
     }
   );
 
-  // clones an existing panel 
+  // clones an existing panel
   // returns new panel Id
   router.post(
     {
@@ -330,7 +330,7 @@ export function PanelsRouter(router: IRouter) {
     }
   );
 
-  // delete an existing panel 
+  // delete an existing panel
   router.delete(
     {
       path: `${API_PREFIX}/panels/{panelId}`,

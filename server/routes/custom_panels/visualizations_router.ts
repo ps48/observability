@@ -19,6 +19,57 @@ import {
 import { CUSTOM_PANELS_API_PREFIX as API_PREFIX } from '../../../common/constants/custom_panels';
 
 export function VisualizationsRouter(router: IRouter) {
+  // NOTE: Currently the API calls are dummy and are not connected to esclient.
+  // Fetch all the savedVisualzations
+  router.get(
+    {
+      path: `${API_PREFIX}/visualizations`,
+      validate: {},
+    },
+    async (
+      context,
+      request,
+      response
+    ): Promise<IOpenSearchDashboardsResponse<any | ResponseError>> => {
+      const savedVisualizations = [
+        {
+          id: '1',
+          title: 'Demo Viz 1',
+          query:
+            'source=opensearch_dashboards_sample_data_flights | fields Carrier,Origin | where Carrier=&#39;OpenSearch-Air&#39; | stats count() by Origin',
+          type: 'line',
+        },
+        {
+          id: '2',
+          title: 'Demo Viz 2',
+          query:
+            'source=opensearch_dashboards_sample_data_flights | fields Carrier,Origin | where Carrier=&#39;OpenSearch-Air&#39; | stats count() by Origin',
+          type: 'bar',
+        },
+        {
+          id: '3',
+          title: 'Demo Viz 3',
+          query:
+            'source=opensearch_dashboards_sample_data_flights | fields Carrier,FlightDelayMin | stats sum(FlightDelayMin) as delays by Carrier',
+          type: 'bar',
+        },
+      ];
+      try {
+        return response.ok({
+          body: {
+            visualizations: savedVisualizations,
+          },
+        });
+      } catch (error) {
+        console.log('Issue in fetching panels:', error);
+        return response.custom({
+          statusCode: error.statusCode || 500,
+          body: error.message,
+        });
+      }
+    }
+  );
+
   // Add a new visualization to the panel
   router.post(
     {

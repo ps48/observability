@@ -35,3 +35,10 @@ export type PanelType = {
   queryFilter: { query: string; language: string };
   refreshConfig: { pause: string; value: string };
 };
+
+export type SavedVisualizationType = {
+  id: string;
+  title: string;
+  query: string;
+  type: string;
+};
