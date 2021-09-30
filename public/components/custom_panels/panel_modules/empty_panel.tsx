@@ -25,16 +25,15 @@ import React, { useState } from 'react';
  * EmptyPanelView
  * This Sub-component is shown to the user when a operational panel is empty
  * Props:
- * addVizWindow -> This function shows the add visualization window in operational panels view
+ * showFlyout -> This function shows the add visualization window in operational panels view
  */
 
 type Props = {
-  addVizWindow: () => void;
   addVizDisabled: boolean;
   vizContextPanels: EuiContextMenuPanelDescriptor[] | undefined;
 };
 
-export const EmptyPanelView = ({ addVizWindow, addVizDisabled, vizContextPanels }: Props) => {
+export const EmptyPanelView = ({ addVizDisabled, vizContextPanels }: Props) => {
   const [isVizPopoverOpen, setVizPopoverOpen] = useState(false); // Add Visualization Popover
 
   const onPopoverClick = () => {

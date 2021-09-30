@@ -34,7 +34,6 @@ import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { CoreStart } from '../../../../../src/core/public';
 import { EmptyPanelView } from './panel_modules/empty_panel';
-import { AddVizView } from './panel_modules/add_visualization';
 import {
   RENAME_VISUALIZATION_MESSAGE,
   CREATE_PANEL_MESSAGE,
@@ -53,7 +52,7 @@ import { DurationRange } from '@elastic/eui/src/components/date_picker/types';
 import { UI_DATE_FORMAT } from '../../../common/constants/shared';
 import { ChangeEvent } from 'react';
 import moment from 'moment';
-import { AddVisualizationFlyout } from './panel_modules/add_visualization_flyout';
+import { VisaulizationFlyout } from './panel_modules/visualization_flyout';
 
 /*
  * "CustomPanelsView" module used to render an Operational Panel
@@ -96,13 +95,14 @@ export const CustomPanelView = ({
   const [inputDisabled, setInputDisabled] = useState(true);
   const [addVizDisabled, setAddVizDisabled] = useState(false);
   const [editDisabled, setEditDisabled] = useState(false);
-  const [showVizPanel, setShowVizPanel] = useState(false);
   const [panelVisualizations, setPanelVisualizations] = useState<Array<VisualizationType>>([]);
   const [editMode, setEditMode] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false); // Modal Toggle
   const [modalLayout, setModalLayout] = useState(<EuiOverlayMask></EuiOverlayMask>); // Modal Layout
   const [isVizPopoverOpen, setVizPopoverOpen] = useState(false); // Add Visualization Popover
   const [isFlyoutVisible, setIsFlyoutVisible] = useState(false); // Add Visualization Flyout
+  const [isFlyoutReplacement, setisFlyoutReplacement] = useState<boolean | undefined>(false);
+  const [replaceVisualizationId, setReplaceVisualizationId] = useState<string | undefined>('');
 
   // DateTimePicker States
   const [recentlyUsedRanges, setRecentlyUsedRanges] = useState<DurationRange[]>([]);
@@ -117,7 +117,7 @@ export const CustomPanelView = ({
         {
           name: 'Select Existing Visualization',
           onClick: () => {
-            addVizWindow();
+            showFlyout();
           },
         },
         {
@@ -215,18 +215,17 @@ export const CustomPanelView = ({
   // toggle between panel edit mode
   const editPanel = () => {
     setEditMode(!editMode);
-    setShowVizPanel(false);
   };
 
-  const closeVizWindow = () => {
-    //setShowVizPanel(false);
+  const closeFlyout = () => {
     setIsFlyoutVisible(false);
     setAddVizDisabled(false);
     checkDisabledInputs();
   };
 
-  const addVizWindow = () => {
-    // setShowVizPanel(true);
+  const showFlyout = (isReplacement?: boolean, replaceVizId?: string) => {
+    setisFlyoutReplacement(isReplacement);
+    setReplaceVisualizationId(replaceVizId);
     closeVizPopover();
     setIsFlyoutVisible(true);
     setAddVizDisabled(true);
@@ -332,8 +331,8 @@ export const CustomPanelView = ({
   let flyout;
   if (isFlyoutVisible) {
     flyout = (
-      <AddVisualizationFlyout
-        closeVizWindow={closeVizWindow}
+      <VisaulizationFlyout
+        closeFlyout={closeFlyout}
         start={start}
         end={end}
         setToast={setToast}
@@ -341,6 +340,8 @@ export const CustomPanelView = ({
         pplService={pplService}
         panelVisualizations={panelVisualizations}
         setPanelVisualizations={setPanelVisualizations}
+        isFlyoutReplacement={isFlyoutReplacement}
+        replaceVisualizationId={replaceVisualizationId}
       />
     );
   }
@@ -461,13 +462,7 @@ export const CustomPanelView = ({
             </EuiFlexGroup>
             <EuiSpacer size="l" />
             {panelVisualizations.length == 0 ? (
-              !showVizPanel && (
-                <EmptyPanelView
-                  addVizWindow={addVizWindow}
-                  addVizDisabled={addVizDisabled}
-                  vizContextPanels={vizContextPanels}
-                />
-              )
+              <EmptyPanelView addVizDisabled={addVizDisabled} vizContextPanels={vizContextPanels} />
             ) : (
               <PanelGrid
                 chrome={chrome}
@@ -480,19 +475,10 @@ export const CustomPanelView = ({
                 cloneVisualization={cloneVisualization}
                 deleteVisualization={deleteVisualization}
                 pplFilterValue={pplFilterValue}
+                showFlyout={showFlyout}
               />
             )}
-            <>
-              {/* {showVizPanel && (
-                <AddVizView
-                  closeVizWindow={closeVizWindow}
-                  pplService={pplService}
-                  panelVisualizations={panelVisualizations}
-                  setPanelVisualizations={setPanelVisualizations}
-                  setToast={setToast}
-                />
-              )} */}
-            </>
+            <></>
           </EuiPageContentBody>
         </EuiPageBody>
       </EuiPage>

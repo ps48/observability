@@ -46,6 +46,7 @@ type Props = {
   ) => void;
   deleteVisualization: (visualizationId: string, visualizationName: string) => void;
   pplFilterValue: string;
+  showFlyout: (isReplacement?: boolean | undefined, replaceVizId?: string | undefined) => void;
 };
 
 export const VisualizationContainer = ({
@@ -61,6 +62,7 @@ export const VisualizationContainer = ({
   cloneVisualization,
   deleteVisualization,
   pplFilterValue,
+  showFlyout,
 }: Props) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [disablePopover, setDisablePopover] = useState(false);
@@ -74,8 +76,12 @@ export const VisualizationContainer = ({
     <EuiContextMenuItem key="viewEvents" disabled={disablePopover}>
       View events <EuiIcon type="popout" style={{ marginLeft: '1vw' }} />
     </EuiContextMenuItem>,
-    <EuiContextMenuItem key="Edit" disabled={disablePopover}>
-      Edit
+    <EuiContextMenuItem
+      key="Edit"
+      disabled={disablePopover}
+      onClick={() => showFlyout(true, visualizationId)}
+    >
+      Replace
     </EuiContextMenuItem>,
     <EuiContextMenuItem
       key="Duplicate"
@@ -103,7 +109,7 @@ export const VisualizationContainer = ({
       setVisualizationData,
       setIsLoading,
       setIsError,
-      pplFilterValue,
+      pplFilterValue
     );
   };
 
@@ -125,7 +131,7 @@ export const VisualizationContainer = ({
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiPopover
-            button={<EuiButtonIcon iconType="boxesHorizontal" onClick={onActionsMenuClick} />}
+            button={<EuiButtonIcon aria-label="actionMenuButton" iconType="boxesHorizontal" onClick={onActionsMenuClick} />}
             isOpen={isPopoverOpen}
             closePopover={closeActionsMenu}
             anchorPosition="downLeft"

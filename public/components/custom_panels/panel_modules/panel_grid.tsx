@@ -22,15 +22,15 @@ import { VisualizationType } from '../../../../common/constants/custom_panels';
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 /*
-* PanelGrid - This module is places all visualizations in react-grid-layout
-* chrome: CoreStart['chrome'];
-* panelVisualizations: VisualizationType[];
-* editMode: boolean;
-* pplService: PPLService;
-* startTime: string;
-* endTime: string;
-* onRefresh: boolean;
-*/
+ * PanelGrid - This module is places all visualizations in react-grid-layout
+ * chrome: CoreStart['chrome'];
+ * panelVisualizations: VisualizationType[];
+ * editMode: boolean;
+ * pplService: PPLService;
+ * startTime: string;
+ * endTime: string;
+ * onRefresh: boolean;
+ */
 
 type Props = {
   chrome: CoreStart['chrome'];
@@ -40,9 +40,14 @@ type Props = {
   startTime: string;
   endTime: string;
   onRefresh: boolean;
-  cloneVisualization: (newVisualizationTitle: string, pplQuery: string, newVisualizationType: string) => void;
-  deleteVisualization: (visualizationId: string, visualizationName: string)=> void;
+  cloneVisualization: (
+    newVisualizationTitle: string,
+    pplQuery: string,
+    newVisualizationType: string
+  ) => void;
+  deleteVisualization: (visualizationId: string, visualizationName: string) => void;
   pplFilterValue: string;
+  showFlyout: (isReplacement?: boolean | undefined, replaceVizId?: string | undefined) => void;
 };
 
 export const PanelGrid = ({
@@ -56,6 +61,7 @@ export const PanelGrid = ({
   cloneVisualization,
   deleteVisualization,
   pplFilterValue,
+  showFlyout,
 }: Props) => {
   const [layout, setLayout] = useState<Layout[]>([]);
   const [editedLayout, setEditedLayout] = useState<Layout[]>([]);
@@ -69,7 +75,7 @@ export const PanelGrid = ({
 
   // Reload the Layout
   const reloadLayout = () => {
-    const tempLayout:Layout[] = panelVisualizations.map((panelVisualization) => {
+    const tempLayout: Layout[] = panelVisualizations.map((panelVisualization) => {
       return {
         i: panelVisualization.id,
         x: panelVisualization.x,
@@ -131,6 +137,7 @@ export const PanelGrid = ({
             cloneVisualization={cloneVisualization}
             deleteVisualization={deleteVisualization}
             pplFilterValue={pplFilterValue}
+            showFlyout={showFlyout}
           />
         </div>
       ))}

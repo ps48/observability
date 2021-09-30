@@ -13,6 +13,7 @@ import {
   EuiButton,
   EuiButtonEmpty,
   EuiButtonIcon,
+  EuiCallOut,
   EuiDatePicker,
   EuiDatePickerRange,
   EuiFlexGroup,
@@ -20,14 +21,11 @@ import {
   EuiFlyoutBody,
   EuiFlyoutFooter,
   EuiFlyoutHeader,
-  EuiFormControlLayoutDelimited,
   EuiFormRow,
   EuiIcon,
   EuiSelect,
   EuiSelectOption,
   EuiSpacer,
-  EuiSuperDatePicker,
-  EuiSuperDatePickerProps,
   EuiText,
   EuiTitle,
   htmlIdGenerator,
@@ -38,7 +36,7 @@ import React, { useEffect, useState } from 'react';
 import { FlyoutContainers } from '../helpers/flyout_containers';
 import { getNewVizDimensions, getQueryResponse, onTimeChange } from '../helpers/utils';
 import { convertDateTime } from '../helpers/utils';
-import { Plt } from '../../../components/visualizations/plotly/plot';
+import { Plt } from '../../visualizations/plotly/plot';
 import PPLService from '../../../services/requests/ppl';
 import { CoreStart } from '../../../../../../src/core/public';
 import {
@@ -49,7 +47,7 @@ import {
 import _ from 'lodash';
 
 type Props = {
-  closeVizWindow: () => void;
+  closeFlyout: () => void;
   start: ShortDate;
   end: ShortDate;
   setToast: (title: string, color?: string, text?: string) => void;
@@ -57,10 +55,12 @@ type Props = {
   pplService: PPLService;
   panelVisualizations: VisualizationType[];
   setPanelVisualizations: React.Dispatch<React.SetStateAction<VisualizationType[]>>;
+  isFlyoutReplacement?: boolean | undefined;
+  replaceVisualizationId?: string | undefined;
 };
 
-export const AddVisualizationFlyout = ({
-  closeVizWindow,
+export const VisaulizationFlyout = ({
+  closeFlyout,
   start,
   end,
   setToast,
@@ -68,6 +68,8 @@ export const AddVisualizationFlyout = ({
   pplService,
   panelVisualizations,
   setPanelVisualizations,
+  isFlyoutReplacement,
+  replaceVisualizationId,
 }: Props) => {
   const [newVisualizationTitle, setNewVisualizationTitle] = useState('');
   const [newVisualizationType, setNewVisualizationType] = useState('');
@@ -97,9 +99,41 @@ export const AddVisualizationFlyout = ({
   };
 
   const addVisualization = () => {
-    const newDimensions = getNewVizDimensions(panelVisualizations);
+    if (selectValue === '') {
+      setToast('Please make a valid selection', 'danger');
+      return;
+    }
+
+    // Adding bang(!) operator here and the newdimensions cannot be null or undefined,
+    // as they come from presaved visualization
+    let newDimensions!: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+    };
+    let visualizationsList = [] as VisualizationType[];
+
+    if (isFlyoutReplacement) {
+      panelVisualizations.map((visualization) => {
+        if (visualization.id != replaceVisualizationId) {
+          visualizationsList.push(visualization);
+        } else {
+          newDimensions = {
+            x: visualization.x,
+            y: visualization.y,
+            w: visualization.w,
+            h: visualization.h,
+          };
+        }
+      });
+    } else {
+      visualizationsList = panelVisualizations;
+      newDimensions = getNewVizDimensions(panelVisualizations);
+    }
+
     setPanelVisualizations([
-      ...panelVisualizations,
+      ...visualizationsList,
       {
         id: 'panelViz_' + htmlIdGenerator()(),
         title: newVisualizationTitle,
@@ -111,7 +145,7 @@ export const AddVisualizationFlyout = ({
 
     //NOTE: Add a backend call to add a visualization
     setToast(`Visualization ${newVisualizationTitle} successfully added!`, 'success');
-    closeVizWindow();
+    closeFlyout();
   };
 
   const onRefreshPreview = () => {
@@ -169,7 +203,9 @@ export const AddVisualizationFlyout = ({
   const flyoutHeader = (
     <EuiFlyoutHeader hasBorder>
       <EuiTitle size="m">
-        <h2 id="addVisualizationFlyout">Select Existing Visualization</h2>
+        <h2 id="addVisualizationFlyout">
+          {isFlyoutReplacement ? 'Replace Visualization' : 'Select Existing Visualization'}
+        </h2>
       </EuiTitle>
     </EuiFlyoutHeader>
   );
@@ -178,7 +214,13 @@ export const AddVisualizationFlyout = ({
     setSelectValue(e.target.value);
   };
 
-  const flyoutBody2 =
+  const emptySavedVisualizations = (
+    <EuiCallOut iconType="help">
+      <p>No saved visualizations found!</p>
+    </EuiCallOut>
+  );
+
+  const flyoutBody =
     savedVisualizations.length > 0 ? (
       <EuiFlyoutBody>
         <>
@@ -206,6 +248,7 @@ export const AddVisualizationFlyout = ({
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <EuiButtonIcon
+                aria-label="refreshPreview"
                 iconType="refresh"
                 aria-label="refresh-visualization"
                 onClick={onRefreshPreview}
@@ -218,7 +261,7 @@ export const AddVisualizationFlyout = ({
         </>
       </EuiFlyoutBody>
     ) : (
-      <EuiFlyoutBody>
+      <EuiFlyoutBody banner={emptySavedVisualizations}>
         <>
           <div>
             You don't have any saved visualizations. Please use the "create new visualization"
@@ -228,51 +271,11 @@ export const AddVisualizationFlyout = ({
       </EuiFlyoutBody>
     );
 
-  const flyoutBody = (
-    <EuiFlyoutBody>
-      <>
-        <EuiSpacer size="l" />
-        <EuiFormRow label="Visualization name">
-          <EuiSelect
-            hasNoInitialSelection
-            onChange={(e) => onChangeSelection(e)}
-            options={visualizationOptions}
-          />
-        </EuiFormRow>
-        <EuiSpacer size="l" />
-        <EuiSpacer size="l" />
-        <EuiFlexGroup alignItems="center">
-          <EuiFlexItem grow={false}>
-            <EuiButtonEmpty
-              iconSide="left"
-              onClick={onPreviewClick}
-              iconType={previewIconType}
-              size="s"
-              isLoading={previewLoading}
-            >
-              Preview
-            </EuiButtonEmpty>
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="refresh"
-              aria-label="refresh-visualization"
-              onClick={onRefreshPreview}
-            />
-          </EuiFlexItem>
-        </EuiFlexGroup>
-        <EuiSpacer size="m" />
-        {showPreviewArea && previewArea}
-        <EuiSpacer size="m" />
-      </>
-    </EuiFlyoutBody>
-  );
-
   const flyoutFooter = (
     <EuiFlyoutFooter>
       <EuiFlexGroup gutterSize="s" justifyContent="spaceBetween">
         <EuiFlexItem grow={false}>
-          <EuiButton onClick={closeVizWindow}>Cancel</EuiButton>
+          <EuiButton onClick={closeFlyout}>Cancel</EuiButton>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiButton onClick={addVisualization} fill>
@@ -336,13 +339,15 @@ export const AddVisualizationFlyout = ({
 
   useEffect(() => {
     // On change of selected visualization change options
-    savedVisualizations.map((visualization: SavedVisualizationType) => {
+    for (var i = 0; i < savedVisualizations.length; i++) {
+      const visualization = savedVisualizations[i];
       if (visualization.id === selectValue) {
         setPPLQuery(visualization.query);
         setNewVisualizationTitle(visualization.title);
         setNewVisualizationType(visualization.type);
+        break;
       }
-    });
+    }
   }, [selectValue]);
 
   useEffect(() => {
@@ -352,7 +357,7 @@ export const AddVisualizationFlyout = ({
 
   return (
     <FlyoutContainers
-      closeFlyout={closeVizWindow}
+      closeFlyout={closeFlyout}
       flyoutHeader={flyoutHeader}
       flyoutBody={flyoutBody}
       flyoutFooter={flyoutFooter}
