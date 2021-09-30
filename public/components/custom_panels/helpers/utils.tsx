@@ -155,3 +155,21 @@ export const onTimeChange = (
     recentlyUsedRange.length > 10 ? recentlyUsedRange.slice(0, 9) : recentlyUsedRange
   );
 };
+
+// Function to check date validity
+export const isDateValid = (
+  start: string | Moment | undefined,
+  end: string | Moment | undefined,
+  setToast: (
+    title: string,
+    color?: string,
+    text?: React.ReactChild | undefined,
+    side?: string | undefined
+  ) => void,
+  side?: string | undefined
+) => {
+  if (end! < start!) {
+    setToast('Time range entered is invalid', 'danger', undefined, side);
+    return false;
+  } else return true;
+};

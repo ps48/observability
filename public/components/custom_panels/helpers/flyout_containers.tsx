@@ -37,13 +37,11 @@ export const FlyoutContainers = ({
 }: Props) => {
   return (
     <div>
-      <EuiOverlayMask>
-        <EuiFlyout ownFocus={false} onClose={() => closeFlyout()} aria-labelledby={ariaLabel}>
-          {flyoutHeader}
-          {flyoutBody}
-          {flyoutFooter}
-        </EuiFlyout>
-      </EuiOverlayMask>
+      <EuiFlyout ownFocus={false} onClose={() => closeFlyout()} aria-labelledby={ariaLabel}>
+        {flyoutHeader}
+        {flyoutBody}
+        {flyoutFooter}
+      </EuiFlyout>
     </div>
   );
 };

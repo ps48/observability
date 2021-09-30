@@ -17,6 +17,7 @@ import { CoreStart } from '../../../../../../src/core/public';
 import PPLService from '../../../services/requests/ppl';
 import { VisualizationContainer } from './visualization_container';
 import { VisualizationType } from '../../../../common/constants/custom_panels';
+import './panel_grid.scss'
 
 // HOC container to provide dynamic width for Grid layout
 const ResponsiveGridLayout = WidthProvider(Responsive);

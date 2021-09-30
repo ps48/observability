@@ -53,9 +53,11 @@ export const Home = ({ http, chrome, parentBreadcrumb, pplService, renderProps }
   const [customPanelData, setcustomPanelData] = useState<Array<CustomPanelListType>>([]);
   const [toasts, setToasts] = useState<Array<Toast>>([]);
   const [loading, setLoading] = useState(false);
+  const [toastRightSide, setToastRightSide] = useState<boolean>(true);
 
-  const setToast = (title: string, color = 'success', text?: ReactChild) => {
+  const setToast = (title: string, color = 'success', text?: ReactChild, side?: string) => {
     if (!text) text = '';
+    setToastRightSide(!side ? true : false);
     setToasts([...toasts, { id: new Date().toISOString(), title, text, color } as Toast]);
   };
 
@@ -202,6 +204,7 @@ export const Home = ({ http, chrome, parentBreadcrumb, pplService, renderProps }
         dismissToast={(removedToast) => {
           setToasts(toasts.filter((toast) => toast.id !== removedToast.id));
         }}
+        side={toastRightSide ? 'right' : 'left'}
         toastLifeTimeMs={6000}
       />
       <Route

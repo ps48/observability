@@ -76,7 +76,12 @@ type Props = {
   renameCustomPanel: (newCustomPanelName: string, customPanelId: string) => void;
   cloneCustomPanel: (newCustomPanelName: string, customPanelId: string) => void;
   deleteCustomPanel: (customPanelId: string, customPanelName?: string, showToast?: boolean) => void;
-  setToast: (title: string, color?: string, text?: string) => void;
+  setToast: (
+    title: string,
+    color?: string,
+    text?: React.ReactChild | undefined,
+    side?: string | undefined
+  ) => void;
 };
 
 export const CustomPanelTable = ({

@@ -34,7 +34,7 @@ import {
 import { PPL_DATE_FORMAT, UI_DATE_FORMAT } from '../../../../common/constants/shared';
 import React, { useEffect, useState } from 'react';
 import { FlyoutContainers } from '../helpers/flyout_containers';
-import { getNewVizDimensions, getQueryResponse, onTimeChange } from '../helpers/utils';
+import { getNewVizDimensions, getQueryResponse, isDateValid, onTimeChange } from '../helpers/utils';
 import { convertDateTime } from '../helpers/utils';
 import { Plt } from '../../visualizations/plotly/plot';
 import PPLService from '../../../services/requests/ppl';
@@ -50,7 +50,12 @@ type Props = {
   closeFlyout: () => void;
   start: ShortDate;
   end: ShortDate;
-  setToast: (title: string, color?: string, text?: string) => void;
+  setToast: (
+    title: string,
+    color?: string,
+    text?: React.ReactChild | undefined,
+    side?: string | undefined
+  ) => void;
   http: CoreStart['http'];
   pplService: PPLService;
   panelVisualizations: VisualizationType[];
@@ -98,12 +103,21 @@ export const VisaulizationFlyout = ({
     }
   };
 
-  const addVisualization = () => {
-    if (selectValue === '') {
-      setToast('Please make a valid selection', 'danger');
-      return;
+  const isInputValid = () => {
+    if (!isDateValid(convertDateTime(start), convertDateTime(end, false), setToast, 'left')) {
+      return false;
     }
 
+    if (selectValue === '') {
+      setToast('Please make a valid selection', 'danger', undefined, 'left');
+      return false;
+    }
+
+    return true;
+  };
+
+  const addVisualization = () => {
+    if (!isInputValid) return;
     // Adding bang(!) operator here and the newdimensions cannot be null or undefined,
     // as they come from presaved visualization
     let newDimensions!: {
@@ -144,20 +158,17 @@ export const VisaulizationFlyout = ({
     ]);
 
     //NOTE: Add a backend call to add a visualization
-    setToast(`Visualization ${newVisualizationTitle} successfully added!`, 'success');
+    setToast(
+      `Visualization ${newVisualizationTitle} successfully added!`,
+      'success',
+      undefined,
+      'left'
+    );
     closeFlyout();
   };
 
   const onRefreshPreview = () => {
-    if (convertDateTime(end, false) < convertDateTime(start)) {
-      setToast('Invalid Time Interval', 'danger');
-      return;
-    }
-
-    if (selectValue == '') {
-      setToast('Please make a valid selection', 'danger');
-      return;
-    }
+    if (!isInputValid) return;
 
     getQueryResponse(
       pplService,
@@ -173,7 +184,7 @@ export const VisaulizationFlyout = ({
   };
 
   const timeRange = (
-    <EuiFormRow label="Time Range">
+    <EuiFormRow label="Panel Time Range">
       <EuiDatePickerRange
         readOnly
         startDateControl={
@@ -250,7 +261,6 @@ export const VisaulizationFlyout = ({
               <EuiButtonIcon
                 aria-label="refreshPreview"
                 iconType="refresh"
-                aria-label="refresh-visualization"
                 onClick={onRefreshPreview}
               />
             </EuiFlexItem>

@@ -47,7 +47,7 @@ import {
   getCustomModal,
 } from './helpers/modal_containers';
 import PPLService from '../../services/requests/ppl';
-import { convertDateTime, getNewVizDimensions, onTimeChange } from './helpers/utils';
+import { isDateValid, convertDateTime, getNewVizDimensions, onTimeChange } from './helpers/utils';
 import { DurationRange } from '@elastic/eui/src/components/date_picker/types';
 import { UI_DATE_FORMAT } from '../../../common/constants/shared';
 import { ChangeEvent } from 'react';
@@ -74,7 +74,12 @@ type Props = {
   parentBreadcrumb: EuiBreadcrumb[];
   renameCustomPanel: (newCustomPanelName: string, customPanelId: string) => void;
   deleteCustomPanel: (customPanelId: string, customPanelName?: string, showToast?: boolean) => void;
-  setToast: (title: string, color?: string, text?: string) => void;
+  setToast: (
+    title: string,
+    color?: string,
+    text?: React.ReactChild | undefined,
+    side?: string | undefined
+  ) => void;
 };
 
 export const CustomPanelView = ({
@@ -133,7 +138,7 @@ export const CustomPanelView = ({
   const advancedVisualization = () => {
     closeVizPopover();
     //NOTE: Add Redux functions to pass pplquery and time filters to events page
-    window.location.assign('#/explorer/events');
+    window.location.assign('#/event_analytics/explorer');
   };
 
   // Fetch Panel by id
@@ -246,6 +251,9 @@ export const CustomPanelView = ({
   };
 
   const onRefreshFilters = () => {
+    if (!isDateValid(convertDateTime(start), convertDateTime(end, false), setToast)) {
+      return;
+    }
     setOnRefresh(!onRefresh);
   };
 
@@ -353,10 +361,7 @@ export const CustomPanelView = ({
 
   // Check Validity of Time
   useEffect(() => {
-    if (convertDateTime(end, false) < convertDateTime(start)) {
-      setToast('Invalid Time Interval', 'danger');
-      return;
-    }
+    isDateValid(convertDateTime(start), convertDateTime(end, false), setToast);
   }, [start, end]);
 
   // Toggle input type (disabled or not disabled)
@@ -396,9 +401,6 @@ export const CustomPanelView = ({
                 </EuiFlexItem>
                 <EuiFlexItem>
                   <EuiButton onClick={renamePanel}>Rename</EuiButton>
-                </EuiFlexItem>
-                <EuiFlexItem>
-                  <EuiButton>Export</EuiButton>
                 </EuiFlexItem>
                 <EuiFlexItem>
                   <EuiButton

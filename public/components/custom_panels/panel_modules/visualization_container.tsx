@@ -26,6 +26,7 @@ import { Plt } from '../../visualizations/plotly/plot';
 import React, { useEffect, useRef, useState } from 'react';
 import PPLService from '../../../services/requests/ppl';
 import { getQueryResponse } from '../helpers/utils';
+import './visualization_container.scss';
 
 // Visualization Panel module allows view added viz modules.
 
@@ -123,23 +124,31 @@ export const VisualizationContainer = ({
 
   return (
     <EuiPanel style={{ width: '100%', height: '100%' }} grow={false}>
-      <EuiFlexGroup justifyContent="spaceBetween">
-        <EuiFlexItem grow={false}>
-          <EuiText grow={false}>
-            <h5>{visualizationTitle}</h5>
-          </EuiText>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiPopover
-            button={<EuiButtonIcon aria-label="actionMenuButton" iconType="boxesHorizontal" onClick={onActionsMenuClick} />}
-            isOpen={isPopoverOpen}
-            closePopover={closeActionsMenu}
-            anchorPosition="downLeft"
-          >
-            <EuiContextMenuPanel items={popoverPanel} />
-          </EuiPopover>
-        </EuiFlexItem>
-      </EuiFlexGroup>
+      <div className={editMode ? 'mouseGrabber' : ''}>
+        <EuiFlexGroup justifyContent="spaceBetween">
+          <EuiFlexItem grow={false}>
+            <EuiText grow={false}>
+              <h5>{visualizationTitle}</h5>
+            </EuiText>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiPopover
+              button={
+                <EuiButtonIcon
+                  aria-label="actionMenuButton"
+                  iconType="boxesHorizontal"
+                  onClick={onActionsMenuClick}
+                />
+              }
+              isOpen={isPopoverOpen}
+              closePopover={closeActionsMenu}
+              anchorPosition="downLeft"
+            >
+              <EuiContextMenuPanel items={popoverPanel} />
+            </EuiPopover>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </div>
       <div style={{ width: '100%', height: '90%', overflow: 'scroll', textAlign: 'center' }}>
         {isLoading ? (
           <EuiLoadingChart
