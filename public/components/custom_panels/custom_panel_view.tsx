@@ -38,8 +38,8 @@ import {
   RENAME_VISUALIZATION_MESSAGE,
   CREATE_PANEL_MESSAGE,
   CUSTOM_PANELS_API_PREFIX,
-  VisualizationType,
 } from '../../../common/constants/custom_panels';
+import { VisualizationType } from '../../../common/types/custom_panels';
 import { PanelGrid } from './panel_modules/panel_grid';
 import {
   DeletePanelModal,
@@ -47,7 +47,13 @@ import {
   getCustomModal,
 } from './helpers/modal_containers';
 import PPLService from '../../services/requests/ppl';
-import { isDateValid, convertDateTime, getNewVizDimensions, onTimeChange } from './helpers/utils';
+import {
+  isDateValid,
+  convertDateTime,
+  getNewVizDimensions,
+  onTimeChange,
+  isPPLFilterValid,
+} from './helpers/utils';
 import { DurationRange } from '@elastic/eui/src/components/date_picker/types';
 import { UI_DATE_FORMAT } from '../../../common/constants/shared';
 import { ChangeEvent } from 'react';
@@ -72,8 +78,12 @@ type Props = {
   pplService: PPLService;
   chrome: CoreStart['chrome'];
   parentBreadcrumb: EuiBreadcrumb[];
-  renameCustomPanel: (newCustomPanelName: string, customPanelId: string) => void;
-  deleteCustomPanel: (customPanelId: string, customPanelName?: string, showToast?: boolean) => void;
+  renameCustomPanel: (newCustomPanelName: string, customPanelId: string) => Promise<void>;
+  deleteCustomPanel: (
+    customPanelId: string,
+    customPanelName?: string,
+    showToast?: boolean
+  ) => Promise<any>;
   setToast: (
     title: string,
     color?: string,
@@ -114,26 +124,31 @@ export const CustomPanelView = ({
   const [start, setStart] = useState<ShortDate>('now-30m');
   const [end, setEnd] = useState<ShortDate>('now');
 
-  const vizContextPanels = [
-    {
-      id: 0,
-      title: 'Add Visualization',
-      items: [
-        {
-          name: 'Select Existing Visualization',
-          onClick: () => {
-            showFlyout();
+  const getVizContextPanels = (closeVizPopover?: () => void) => {
+    return [
+      {
+        id: 0,
+        title: 'Add Visualization',
+        items: [
+          {
+            name: 'Select Existing Visualization',
+            onClick: () => {
+              if (closeVizPopover != null) {
+                closeVizPopover();
+              }
+              showFlyout();
+            },
           },
-        },
-        {
-          name: 'Create New Visualization',
-          onClick: () => {
-            advancedVisualization();
+          {
+            name: 'Create New Visualization',
+            onClick: () => {
+              advancedVisualization();
+            },
           },
-        },
-      ],
-    },
-  ];
+        ],
+      },
+    ];
+  };
 
   const advancedVisualization = () => {
     closeVizPopover();
@@ -146,12 +161,12 @@ export const CustomPanelView = ({
     return http
       .get(`${CUSTOM_PANELS_API_PREFIX}/panels/${panelId}`)
       .then((res) => {
-        setOpenPanelName(res.panel.name);
-        setPanelCreatedTime(res.panel.dateCreated);
-        setPanelVisualizations(res.panel.visualizations);
-        setPPLFilterValue(_.unescape(res.panel.queryFilter.query));
-        setStart(res.panel.timeRange.from);
-        setEnd(res.panel.timeRange.to);
+        setOpenPanelName(res.operationalPanel.name);
+        setPanelCreatedTime(res.createdTimeMs);
+        setPPLFilterValue(res.operationalPanel.queryFilter.query);
+        setStart(res.operationalPanel.timeRange.from);
+        setEnd(res.operationalPanel.timeRange.to);
+        setPanelVisualizations(res.operationalPanel.visualizations);
       })
       .catch((err) => {
         console.error('Issue in fetching the operational panels', err);
@@ -179,8 +194,9 @@ export const CustomPanelView = ({
   };
 
   const onDelete = async () => {
-    const toastMessage = `Operational Panel ${openPanelName} successfully deleted!`;
-    deleteCustomPanel(panelId, openPanelName);
+    deleteCustomPanel(panelId, openPanelName).then((res) => {
+      window.location.assign(`${_.last(parentBreadcrumb).href}`);
+    });
     closeModal();
   };
 
@@ -197,7 +213,9 @@ export const CustomPanelView = ({
   };
 
   const onRename = async (newCustomPanelName: string) => {
-    renameCustomPanel(newCustomPanelName, panelId);
+    renameCustomPanel(newCustomPanelName, panelId).then(() => {
+      setOpenPanelName(newCustomPanelName);
+    });
     closeModal();
   };
 
@@ -219,7 +237,12 @@ export const CustomPanelView = ({
 
   // toggle between panel edit mode
   const editPanel = () => {
-    setEditMode(!editMode);
+    if (editMode) {
+      // Save layout
+      setEditMode(false);
+    } else {
+      setEditMode(true);
+    }
   };
 
   const closeFlyout = () => {
@@ -231,7 +254,6 @@ export const CustomPanelView = ({
   const showFlyout = (isReplacement?: boolean, replaceVizId?: string) => {
     setisFlyoutReplacement(isReplacement);
     setReplaceVisualizationId(replaceVizId);
-    closeVizPopover();
     setIsFlyoutVisible(true);
     setAddVizDisabled(true);
     setInputDisabled(true);
@@ -254,13 +276,37 @@ export const CustomPanelView = ({
     if (!isDateValid(convertDateTime(start), convertDateTime(end, false), setToast)) {
       return;
     }
-    setOnRefresh(!onRefresh);
+
+    if (!isPPLFilterValid(pplFilterValue, setToast)) {
+      return;
+    }
+
+    const panelFilterBody = {
+      panelId: panelId,
+      query: pplFilterValue,
+      language: 'ppl',
+      to: end,
+      from: start,
+    };
+
+    http
+      .patch(`${CUSTOM_PANELS_API_PREFIX}/panels/filter`, {
+        body: JSON.stringify(panelFilterBody),
+      })
+      .then((res) => {
+        setOnRefresh(!onRefresh);
+      })
+      .catch((err) => {
+        setToast('Error is adding filters to the operational panel', 'danger');
+        console.error(err.body.message);
+      });
   };
 
   const cloneVisualization = (
     newVisualizationTitle: string,
     pplQuery: string,
-    newVisualizationType: string
+    newVisualizationType: string,
+    newVisualizationTimeField: string
   ) => {
     setModalLayout(
       getCustomModal(
@@ -273,7 +319,8 @@ export const CustomPanelView = ({
         newVisualizationTitle + ' (copy)',
         RENAME_VISUALIZATION_MESSAGE,
         pplQuery,
-        newVisualizationType
+        newVisualizationType,
+        newVisualizationTimeField
       )
     );
     showModal();
@@ -282,22 +329,70 @@ export const CustomPanelView = ({
   const onCloneVisualization = (
     newVisualizationTitle: string,
     pplQuery: string,
-    newVisualizationType: string
+    newVisualizationType: string,
+    newVisualizationTimeField: string
   ) => {
     const newDimensions = getNewVizDimensions(panelVisualizations);
-    setPanelVisualizations([
-      ...panelVisualizations,
-      {
-        id: htmlIdGenerator()(),
-        title: newVisualizationTitle,
-        query: pplQuery,
-        type: newVisualizationType,
-        ...newDimensions,
-      },
-    ]);
+    // setPanelVisualizations([
+    //   ...panelVisualizations,
+    //   {
+    //     id: 'panelViz_' + htmlIdGenerator()(),
+    //     title: newVisualizationTitle,
+    //     query: pplQuery,
+    //     type: newVisualizationType,
+    //     timeField: newVisualizationTimeFiled,
+    //     ...newDimensions,
+    //   },
+    // ]);
 
     //NOTE: Make a backend call to Clone Visualization
+    http
+      .post(`${CUSTOM_PANELS_API_PREFIX}/visualizations`, {
+        body: JSON.stringify({
+          panelId: panelId,
+          newVisualization: {
+            id: 'panelViz_' + htmlIdGenerator()(),
+            title: newVisualizationTitle,
+            query: pplQuery,
+            type: newVisualizationType,
+            timeField: newVisualizationTimeField,
+          },
+        }),
+      })
+      .then(async (res) => {
+        // console.log('here it is', res);
+        setPanelVisualizations(res.visualizations);
+        setToast(`Visualization ${newVisualizationTitle} successfully added!`, 'success');
+      })
+      .catch((err) => {
+        setToast(`Error in adding ${newVisualizationTitle} visualization to the panel`, 'danger');
+        console.error(err);
+      });
     closeModal();
+  };
+
+  const removeVisualization = (visualizationId: string, visualizationName: string) => {
+    const newVisualizationList = _.reject(panelVisualizations, { id: visualizationId });
+    if (newVisualizationList.length === 0) {
+      setEditMode(false);
+      http
+        .put(`${CUSTOM_PANELS_API_PREFIX}/visualizations/edit`, {
+          body: JSON.stringify({
+            panelId: panelId,
+            visualizationParams: [],
+          }),
+        })
+        .then(async (res) => {
+          setPanelVisualizations(res.visualizations);
+          console.log('edit successful');
+          // setToast(`Visualization ${newVisualizationTitle} successfully added!`, 'success');
+        })
+        .catch((err) => {
+          // setToast(`Error in adding ${newVisualizationTitle} visualization to the panel`, 'danger');
+          console.error(err);
+        });
+    }
+    setPanelVisualizations(newVisualizationList);
   };
 
   const deleteVisualization = (visualizationId: string, visualizationName: string) => {
@@ -314,11 +409,22 @@ export const CustomPanelView = ({
   };
 
   const onDeleteVisualization = (visualizationId: string) => {
-    const filteredPanelVisualizations = panelVisualizations.filter(
-      (panelVisualization) => panelVisualization.id != visualizationId
-    );
-    setPanelVisualizations([...filteredPanelVisualizations]);
+    // const filteredPanelVisualizations = panelVisualizations.filter(
+    //   (panelVisualization) => panelVisualization.id != visualizationId
+    // );
+    // setPanelVisualizations([...filteredPanelVisualizations]);
 
+    http
+      .delete(`${CUSTOM_PANELS_API_PREFIX}/visualizations/${panelId}/${visualizationId}`)
+      .then(async (res) => {
+        // console.log('here it is', res);
+        setPanelVisualizations(res.visualizations);
+        setToast(`Visualization successfully deleted!`, 'success');
+      })
+      .catch((err) => {
+        setToast(`Error in deleting visualization to the panel`, 'danger');
+        console.error(err);
+      });
     //NOTE: Make a backend call to Delete Visualization
     closeModal();
   };
@@ -340,6 +446,7 @@ export const CustomPanelView = ({
   if (isFlyoutVisible) {
     flyout = (
       <VisaulizationFlyout
+        panelId={panelId}
         closeFlyout={closeFlyout}
         start={start}
         end={end}
@@ -357,6 +464,9 @@ export const CustomPanelView = ({
   // Fetch the custom panel on Initial Mount
   useEffect(() => {
     fetchCustomPanel();
+    // return () => {
+    //   onRefreshFilters();
+    // };
   }, []);
 
   // Check Validity of Time
@@ -418,7 +528,7 @@ export const CustomPanelView = ({
             <EuiFlexGroup gutterSize="s">
               <EuiFlexItem>
                 <EuiFieldText
-                  placeholder="Use PPL to query log indices below. Use “source=” to quickly switch to a different index."
+                  placeholder="Use PPL 'where' clauses to add filters on all the visualizations in this panel"
                   value={pplFilterValue}
                   fullWidth={true}
                   onChange={(e) => onChange(e)}
@@ -458,17 +568,26 @@ export const CustomPanelView = ({
                   panelPaddingSize="none"
                   anchorPosition="downLeft"
                 >
-                  <EuiContextMenu initialPanelId={0} panels={vizContextPanels} />
+                  <EuiContextMenu
+                    initialPanelId={0}
+                    panels={getVizContextPanels(closeVizPopover)}
+                  />
                 </EuiPopover>
               </EuiFlexItem>
             </EuiFlexGroup>
             <EuiSpacer size="l" />
-            {panelVisualizations.length == 0 ? (
-              <EmptyPanelView addVizDisabled={addVizDisabled} vizContextPanels={vizContextPanels} />
+            {panelVisualizations.length === 0 ? (
+              <EmptyPanelView
+                addVizDisabled={addVizDisabled}
+                getVizContextPanels={getVizContextPanels}
+              />
             ) : (
               <PanelGrid
+                http={http}
+                panelId={panelId}
                 chrome={chrome}
                 panelVisualizations={panelVisualizations}
+                setPanelVisualizations={setPanelVisualizations}
                 editMode={editMode}
                 pplService={pplService}
                 startTime={start}
@@ -478,6 +597,7 @@ export const CustomPanelView = ({
                 deleteVisualization={deleteVisualization}
                 pplFilterValue={pplFilterValue}
                 showFlyout={showFlyout}
+                removeVisualization={removeVisualization}
               />
             )}
             <></>

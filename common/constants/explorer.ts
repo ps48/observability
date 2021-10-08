@@ -8,7 +8,7 @@
  * Modifications Copyright OpenSearch Contributors. See
  * GitHub history for details.
  */
- 
+
 export const RAW_QUERY = 'rawQuery';
 export const INDEX = 'index';
 export const SELECTED_FIELDS = 'selectedFields';
@@ -30,5 +30,6 @@ export const REDUX_EXPL_SLICE_QUERY_RESULT = 'queryResults';
 export const REDUX_EXPL_SLICE_FIELDS = 'fields';
 export const REDUX_EXPL_SLICE_QUERY_TABS = 'queryTabs';
 export const REDUX_EXPL_SLICE_VISUALIZATION = 'explorerVisualization';
-export const REDUX_EXPL_SLICE_COUNT_DISTRIBUTION = 'countDistributionVisualization'
+export const REDUX_EXPL_SLICE_COUNT_DISTRIBUTION = 'countDistributionVisualization';
 
+export const DATE_PICKER_FORMAT = 'YYYY-MM-DD HH:mm:ss';

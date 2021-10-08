@@ -9,12 +9,8 @@
  * GitHub history for details.
  */
 
-// .react-grid-item.react-grid-placeholder {
-//   background: yellow;
-// }
-
-.react-grid-item {
-  > .react-grid-placeholder {
-    background: lime;
+.react-grid-layout {
+  & .react-grid-placeholder {
+    background: $euiColorWarning;
   }
 }

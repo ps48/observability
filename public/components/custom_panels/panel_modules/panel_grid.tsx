@@ -10,14 +10,15 @@
  */
 
 import _ from 'lodash';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Layout, Layouts, Responsive, WidthProvider } from 'react-grid-layout';
 import useObservable from 'react-use/lib/useObservable';
 import { CoreStart } from '../../../../../../src/core/public';
 import PPLService from '../../../services/requests/ppl';
 import { VisualizationContainer } from './visualization_container';
-import { VisualizationType } from '../../../../common/constants/custom_panels';
-import './panel_grid.scss'
+import { VisualizationType } from '../../../../common/types/custom_panels';
+import './panel_grid.scss';
+import { CUSTOM_PANELS_API_PREFIX } from '../../../../common/constants/custom_panels';
 
 // HOC container to provide dynamic width for Grid layout
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -34,8 +35,11 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
  */
 
 type Props = {
+  http: CoreStart['http'];
   chrome: CoreStart['chrome'];
+  panelId: string;
   panelVisualizations: VisualizationType[];
+  setPanelVisualizations: React.Dispatch<React.SetStateAction<VisualizationType[]>>;
   editMode: boolean;
   pplService: PPLService;
   startTime: string;
@@ -44,16 +48,21 @@ type Props = {
   cloneVisualization: (
     newVisualizationTitle: string,
     pplQuery: string,
-    newVisualizationType: string
+    newVisualizationType: string,
+    newVisualizationTimeField: string
   ) => void;
   deleteVisualization: (visualizationId: string, visualizationName: string) => void;
   pplFilterValue: string;
   showFlyout: (isReplacement?: boolean | undefined, replaceVizId?: string | undefined) => void;
+  removeVisualization: (visualizationId: string, visualizationName: string) => void;
 };
 
 export const PanelGrid = ({
+  http,
   chrome,
+  panelId,
   panelVisualizations,
+  setPanelVisualizations,
   editMode,
   pplService,
   startTime,
@@ -63,6 +72,7 @@ export const PanelGrid = ({
   deleteVisualization,
   pplFilterValue,
   showFlyout,
+  removeVisualization,
 }: Props) => {
   const [layout, setLayout] = useState<Layout[]>([]);
   const [editedLayout, setEditedLayout] = useState<Layout[]>([]);
@@ -89,17 +99,41 @@ export const PanelGrid = ({
     setLayout(tempLayout);
   };
 
+  const saveVisualizationLayouts = async (panelId: string, visualizationParams: any) => {
+    console.log('insave layout', panelVisualizations.length);
+    return http
+      .put(`${CUSTOM_PANELS_API_PREFIX}/visualizations/edit`, {
+        body: JSON.stringify({
+          panelId: panelId,
+          visualizationParams: visualizationParams,
+        }),
+      })
+      .then(async (res) => {
+        setPanelVisualizations(res.visualizations);
+        console.log('edit successful');
+        // setToast(`Visualization ${newVisualizationTitle} successfully added!`, 'success');
+      })
+      .catch((err) => {
+        // setToast(`Error in adding ${newVisualizationTitle} visualization to the panel`, 'danger');
+        console.error(err);
+      });
+  };
+
   // Update layout whenever user edit gets completed
   useEffect(() => {
-    if (editMode) {
-      reloadLayout();
-    } else {
-      const newLayout = editedLayout.map((element) => {
-        return { ...element, static: true };
-      });
-      setLayout(newLayout);
-      // NOTE: need to add backend call to change visualization sizes
-    }
+      if (editMode) {
+        reloadLayout();
+      } else {
+        const newLayout = editedLayout.map((element) => {
+          return { ...element, static: true };
+        });
+        const visualizationParams = newLayout.map((layout) => _.omit(layout, ['static', 'moved']));
+        console.log('visualizationParams', visualizationParams);
+        setLayout(newLayout);
+        if (visualizationParams.length !== 0)
+          saveVisualizationLayouts(panelId, visualizationParams);
+        // NOTE: need to add backend call to change visualization sizes
+      }
   }, [editMode]);
 
   // Update layout whenever visualizations are updated
@@ -131,6 +165,7 @@ export const PanelGrid = ({
             visualizationTitle={panelVisualization.title}
             query={panelVisualization.query}
             type={panelVisualization.type}
+            timeField={panelVisualization.timeField}
             pplService={pplService}
             fromTime={startTime}
             toTime={endTime}
@@ -139,6 +174,7 @@ export const PanelGrid = ({
             deleteVisualization={deleteVisualization}
             pplFilterValue={pplFilterValue}
             showFlyout={showFlyout}
+            removeVisualization={removeVisualization}
           />
         </div>
       ))}

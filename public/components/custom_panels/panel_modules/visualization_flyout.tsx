@@ -23,6 +23,7 @@ import {
   EuiFlyoutHeader,
   EuiFormRow,
   EuiIcon,
+  EuiLoadingChart,
   EuiSelect,
   EuiSelectOption,
   EuiSpacer,
@@ -31,22 +32,30 @@ import {
   htmlIdGenerator,
   ShortDate,
 } from '@elastic/eui';
-import { PPL_DATE_FORMAT, UI_DATE_FORMAT } from '../../../../common/constants/shared';
+import _ from 'lodash';
+import { UI_DATE_FORMAT } from '../../../../common/constants/shared';
 import React, { useEffect, useState } from 'react';
 import { FlyoutContainers } from '../helpers/flyout_containers';
-import { getNewVizDimensions, getQueryResponse, isDateValid, onTimeChange } from '../helpers/utils';
+import {
+  displayVisualization,
+  getNewVizDimensions,
+  getQueryResponse,
+  isDateValid,
+  onTimeChange,
+  savedVisualizationsQueryBuilder,
+} from '../helpers/utils';
 import { convertDateTime } from '../helpers/utils';
-import { Plt } from '../../visualizations/plotly/plot';
 import PPLService from '../../../services/requests/ppl';
 import { CoreStart } from '../../../../../../src/core/public';
+import { CUSTOM_PANELS_API_PREFIX } from '../../../../common/constants/custom_panels';
 import {
-  CUSTOM_PANELS_API_PREFIX,
+  pplResponse,
   SavedVisualizationType,
   VisualizationType,
-} from '../../../../common/constants/custom_panels';
-import _ from 'lodash';
+} from '../../../../common/types/custom_panels';
 
 type Props = {
+  panelId: string;
   closeFlyout: () => void;
   start: ShortDate;
   end: ShortDate;
@@ -65,6 +74,7 @@ type Props = {
 };
 
 export const VisaulizationFlyout = ({
+  panelId,
   closeFlyout,
   start,
   end,
@@ -78,8 +88,9 @@ export const VisaulizationFlyout = ({
 }: Props) => {
   const [newVisualizationTitle, setNewVisualizationTitle] = useState('');
   const [newVisualizationType, setNewVisualizationType] = useState('');
+  const [newVisualizationTimeField, setNewVisualizationTimeField] = useState('');
   const [pplQuery, setPPLQuery] = useState('');
-  const [previewData, setPreviewData] = useState([]);
+  const [previewData, setPreviewData] = useState<pplResponse>({} as pplResponse);
   const [previewArea, setPreviewArea] = useState(<></>);
   const [showPreviewArea, setShowPreviewArea] = useState(false);
   const [previewIconType, setPreviewIconType] = useState('arrowRight');
@@ -117,58 +128,104 @@ export const VisaulizationFlyout = ({
   };
 
   const addVisualization = () => {
-    if (!isInputValid) return;
+    if (!isInputValid()) return;
     // Adding bang(!) operator here and the newdimensions cannot be null or undefined,
     // as they come from presaved visualization
-    let newDimensions!: {
-      x: number;
-      y: number;
-      w: number;
-      h: number;
-    };
-    let visualizationsList = [] as VisualizationType[];
+    // let newDimensions!: {
+    //   x: number;
+    //   y: number;
+    //   w: number;
+    //   h: number;
+    // };
+    // let visualizationsList = [] as VisualizationType[];
 
     if (isFlyoutReplacement) {
-      panelVisualizations.map((visualization) => {
-        if (visualization.id != replaceVisualizationId) {
-          visualizationsList.push(visualization);
-        } else {
-          newDimensions = {
-            x: visualization.x,
-            y: visualization.y,
-            w: visualization.w,
-            h: visualization.h,
-          };
-        }
-      });
+      // panelVisualizations.map((visualization) => {
+      //   if (visualization.id != replaceVisualizationId) {
+      //     visualizationsList.push(visualization);
+      //   } else {
+      //     newDimensions = {
+      //       x: visualization.x,
+      //       y: visualization.y,
+      //       w: visualization.w,
+      //       h: visualization.h,
+      //     };
+      //   }
+      // });
+
+      http
+        .post(`${CUSTOM_PANELS_API_PREFIX}/visualizations/replace`, {
+          body: JSON.stringify({
+            panelId: panelId,
+            oldVisualizationId: replaceVisualizationId,
+            newVisualization: {
+              id: 'panelViz_' + htmlIdGenerator()(),
+              title: newVisualizationTitle,
+              query: pplQuery,
+              type: newVisualizationType,
+              timeField: newVisualizationTimeField,
+            },
+          }),
+        })
+        .then(async (res) => {
+          setPanelVisualizations(res.visualizations);
+          setToast(`Visualization ${newVisualizationTitle} successfully added!`, 'success');
+        })
+        .catch((err) => {
+          setToast(`Error in adding ${newVisualizationTitle} visualization to the panel`, 'danger');
+          console.error(err);
+        });
     } else {
-      visualizationsList = panelVisualizations;
-      newDimensions = getNewVizDimensions(panelVisualizations);
+      // visualizationsList = panelVisualizations;
+      // newDimensions = getNewVizDimensions(panelVisualizations);
+
+      http
+        .post(`${CUSTOM_PANELS_API_PREFIX}/visualizations`, {
+          body: JSON.stringify({
+            panelId: panelId,
+            newVisualization: {
+              id: 'panelViz_' + htmlIdGenerator()(),
+              title: newVisualizationTitle,
+              query: pplQuery,
+              type: newVisualizationType,
+              timeField: newVisualizationTimeField,
+            },
+          }),
+        })
+        .then(async (res) => {
+          // console.log('here it is', res);
+          setPanelVisualizations(res.visualizations);
+          setToast(`Visualization ${newVisualizationTitle} successfully added!`, 'success');
+        })
+        .catch((err) => {
+          setToast(`Error in adding ${newVisualizationTitle} visualization to the panel`, 'danger');
+          console.error(err);
+        });
     }
 
-    setPanelVisualizations([
-      ...visualizationsList,
-      {
-        id: 'panelViz_' + htmlIdGenerator()(),
-        title: newVisualizationTitle,
-        query: pplQuery,
-        type: newVisualizationType,
-        ...newDimensions,
-      },
-    ]);
+    // setPanelVisualizations([
+    //   ...visualizationsList,
+    //   {
+    //     id: 'panelViz_' + htmlIdGenerator()(),
+    //     title: newVisualizationTitle,
+    //     query: pplQuery,
+    //     type: newVisualizationType,
+    //     ...newDimensions,
+    //   },
+    // ]);
 
     //NOTE: Add a backend call to add a visualization
-    setToast(
-      `Visualization ${newVisualizationTitle} successfully added!`,
-      'success',
-      undefined,
-      'left'
-    );
+    // setToast(
+    //   `Visualization ${newVisualizationTitle} successfully added!`,
+    //   'success',
+    //   undefined,
+    //   'left'
+    // );
     closeFlyout();
   };
 
   const onRefreshPreview = () => {
-    if (!isInputValid) return;
+    if (!isInputValid()) return;
 
     getQueryResponse(
       pplService,
@@ -179,13 +236,15 @@ export const VisaulizationFlyout = ({
       setPreviewData,
       setPreviewLoading,
       setIsPreviewError,
-      ''
+      '',
+      newVisualizationTimeField
     );
   };
 
   const timeRange = (
     <EuiFormRow label="Panel Time Range">
       <EuiDatePickerRange
+        style={{ height: '3vh' }}
         readOnly
         startDateControl={
           <EuiDatePicker
@@ -305,7 +364,7 @@ export const VisaulizationFlyout = ({
           setSavedVisualizations(res.visualizations);
           setVisualizationOptions(
             res.visualizations.map((visualization: SavedVisualizationType) => {
-              return { value: visualization.id, text: visualization.title };
+              return { value: visualization.id, text: visualization.name };
             })
           );
         }
@@ -316,20 +375,28 @@ export const VisaulizationFlyout = ({
   };
 
   useEffect(() => {
-    const previewTemplate =
-      isPreviewError == '' ? (
-        <>
-          {timeRange}
-          <EuiFlexGroup>
-            <EuiFlexItem style={{ minHeight: '200' }}>
-              <Plt data={previewData} layout={{ showlegend: false }} />
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        </>
-      ) : (
-        <>
-          {timeRange}
-          <div style={{ minHeight: '200', overflow: 'scroll', textAlign: 'center' }}>
+    const previewTemplate = (
+      <>
+        {timeRange}
+        {previewLoading ? (
+          <EuiLoadingChart
+            size="xl"
+            mono
+            style={{
+              margin: 0,
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              msTransform: 'translate(-50%, -50%)',
+              transform: 'translate(-50%, -50%)',
+            }}
+          />
+        ) : isPreviewError != '' ? (
+          <div
+            style={{
+              overflow: 'scroll',
+            }}
+          >
             <EuiSpacer size="l" />
             <EuiIcon type="alert" color="danger" size="l" />
             <EuiSpacer size="l" />
@@ -341,9 +408,15 @@ export const VisaulizationFlyout = ({
               <p>{isPreviewError}</p>
             </EuiText>
           </div>
-        </>
-      );
-
+        ) : (
+          <EuiFlexGroup>
+            <EuiFlexItem style={{ minHeight: '200' }}>
+              {displayVisualization(previewData, newVisualizationType)}
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        )}
+      </>
+    );
     setPreviewArea(previewTemplate);
   }, [previewLoading]);
 
@@ -352,9 +425,12 @@ export const VisaulizationFlyout = ({
     for (var i = 0; i < savedVisualizations.length; i++) {
       const visualization = savedVisualizations[i];
       if (visualization.id === selectValue) {
-        setPPLQuery(visualization.query);
-        setNewVisualizationTitle(visualization.title);
+        setPPLQuery(
+          savedVisualizationsQueryBuilder(visualization.query, visualization.selected_fields)
+        );
+        setNewVisualizationTitle(visualization.name);
         setNewVisualizationType(visualization.type);
+        setNewVisualizationTimeField(visualization.time_field);
         break;
       }
     }

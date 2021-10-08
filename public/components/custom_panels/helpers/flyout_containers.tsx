@@ -11,12 +11,6 @@
 
 import {
   EuiFlyout,
-  EuiFlyoutBodyProps,
-  EuiFlyoutFooterProps,
-  EuiFlyoutHeaderProps,
-  EuiOverlayMask,
-  EuiText,
-  EuiTitle,
 } from '@elastic/eui';
 import React from 'react';
 

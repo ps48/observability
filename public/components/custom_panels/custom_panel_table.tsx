@@ -60,7 +60,7 @@ const pageStyles: CSSProperties = {
  * createCustomPanel: create panel function
  * setBreadcrumbs: setter for breadcrumbs on top panel
  * parentBreadcrumb: parent breadcrumb
- * renameCustomPanel: delete function for the panel
+ * renameCustomPanel: rename function for the panel
  * cloneCustomPanel: clone function for the panel
  * deleteCustomPanel: delete function for the panel
  * setToast: create Toast function
@@ -68,7 +68,7 @@ const pageStyles: CSSProperties = {
 
 type Props = {
   loading: boolean;
-  fetchCustomPanels: () => void;
+  fetchCustomPanels: () => Promise<void>;
   customPanels: Array<CustomPanelListType>;
   createCustomPanel: (newCustomPanelName: string) => void;
   setBreadcrumbs: (newBreadcrumbs: ChromeBreadcrumb[]) => void;
@@ -268,13 +268,13 @@ export const CustomPanelTable = ({
       field: 'dateModified',
       name: 'Last updated',
       sortable: true,
-      render: (value) => moment(value).format(UI_DATE_FORMAT),
+      render: (value) => moment(new Date(value)).format(UI_DATE_FORMAT),
     },
     {
       field: 'dateCreated',
       name: 'Created',
       sortable: true,
-      render: (value) => moment(value).format(UI_DATE_FORMAT),
+      render: (value) => moment(new Date(value)).format(UI_DATE_FORMAT),
     },
   ] as Array<
     EuiTableFieldDataColumnType<{

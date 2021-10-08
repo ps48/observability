@@ -12,12 +12,22 @@
 import dateMath from '@elastic/datemath';
 import { ShortDate } from '@elastic/eui';
 import { DurationRange } from '@elastic/eui/src/components/date_picker/types';
-import _ from 'lodash';
+import _, { isEmpty } from 'lodash';
 import { Moment } from 'moment-timezone';
-import { ConsoleAppender } from '../../../../../../src/core/server/logging/appenders/console/console_appender';
-import { VisualizationType } from '../../../../common/constants/custom_panels';
-import { PPL_DATE_FORMAT, PPL_INDEX_REGEX } from '../../../../common/constants/shared';
+import { VisualizationType } from '../../../../common/types/custom_panels';
+import {
+  PPL_CONTAINS_TIMESTAMP_REGEX,
+  PPL_DATE_FORMAT,
+  PPL_FIELDS_REGEX,
+  PPL_INDEX_REGEX,
+} from '../../../../common/constants/shared';
 import PPLService from '../../../services/requests/ppl';
+import { insertFieldsToQuery } from '../../../../common/utils';
+import { Plt } from '../../visualizations/plotly/plot';
+import React from 'react';
+import { Bar } from '../../visualizations/charts/bar';
+import { HorizontalBar } from '../../visualizations/charts/horizontal_bar';
+import { Line } from '../../visualizations/charts/line';
 
 /*
  * "Utils" This file contains different reused functions in operational panels
@@ -41,7 +51,7 @@ export const convertDateTime = (datetime: string, isStart = true, formatted = tr
   return returnTime;
 };
 
-// Builds Final Query by adding time and query filters to the original visualization query
+// Builds Final Query by adding time and query filters(From panel UI) to the original visualization query
 // -> Final Query is as follows:
 // -> finalQuery = indexPartOfQuery + timeQueryFilter + panelFilterQuery + filterPartOfQuery
 // -> finalQuery = source=opensearch_dashboards_sample_data_flights
@@ -68,8 +78,33 @@ const queryAccumulator = (
   return indexPartOfQuery + timeQueryFilter + pplFilterQuery + filterPartOfQuery;
 };
 
+//PPL Service requestor
+const pplServiceRequestor = async (
+  pplService: PPLService,
+  finalQuery: string,
+  type: string,
+  setVisualizationData: React.Dispatch<React.SetStateAction<any[]>>,
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  setIsError: React.Dispatch<React.SetStateAction<string>>
+) => {
+  await pplService
+    .fetch({ query: finalQuery, format: 'viz' })
+    .then((res) => {
+      // console.log('response,', res);
+      if (res === undefined) setIsError('Please check the PPL Filter Value');
+      setVisualizationData(res);
+    })
+    .catch((error: Error) => {
+      setIsError(error.stack);
+      console.error(error);
+    })
+    .finally(() => {
+      setIsLoading(false);
+    });
+};
+
 // Get PPL Query Response
-export const getQueryResponse = async (
+export const getQueryResponse = (
   pplService: PPLService,
   query: string,
   type: string,
@@ -86,37 +121,14 @@ export const getQueryResponse = async (
 
   let finalQuery = '';
   try {
-    finalQuery = queryAccumulator(
-      _.unescape(query),
-      timestampField,
-      startTime,
-      endTime,
-      filterQuery
-    );
+    finalQuery = queryAccumulator(query, timestampField, startTime, endTime, filterQuery);
   } catch (error) {
     console.log('Issue in building final query', error.stack);
     setIsLoading(false);
     return;
   }
 
-  await pplService
-    .fetch({ query: finalQuery, format: 'viz' })
-    .then((res) => {
-      setVisualizationData([
-        {
-          x: res.data[res.metadata.xfield.name],
-          y: res.data[res.metadata.yfield.name],
-          type: type,
-        },
-      ]);
-    })
-    .catch((error: Error) => {
-      setIsError(error.stack);
-      console.error(err);
-    })
-    .finally(() => {
-      setIsLoading(false);
-    });
+  pplServiceRequestor(pplService, finalQuery, type, setVisualizationData, setIsLoading, setIsError);
 };
 
 // Calculate new visualization dimensions
@@ -172,4 +184,115 @@ export const isDateValid = (
     setToast('Time range entered is invalid', 'danger', undefined, side);
     return false;
   } else return true;
+};
+
+// Check for filed filter in query
+const checkFieldsExists = (query: string) => {
+  return PPL_FIELDS_REGEX.test(query);
+};
+
+// Check for time filter in query
+const checkTimeRangeExists = (query: string) => {
+  return PPL_CONTAINS_TIMESTAMP_REGEX.test(query);
+};
+
+// Check for time filter in query
+const checkIndexExists = (query: string) => {
+  return PPL_INDEX_REGEX.test(query);
+};
+
+// savedObjects Visualzation Query Builder
+// Adds fields in query and removes time filter
+export const savedVisualizationsQueryBuilder = (
+  query: string,
+  fields: { text: string; tokens: string[] }
+) => {
+  let finalQuery = '';
+  finalQuery = insertFieldsToQuery({ rawQuery: query, fields: fields.tokens });
+  finalQuery = checkTimeRangeExists(finalQuery)
+    ? finalQuery.replace(PPL_CONTAINS_TIMESTAMP_REGEX, '')
+    : finalQuery;
+  return finalQuery;
+};
+
+// Check PPL Query in Panel UI
+// Validate if the query doesn't contain any Index/Time/Field filters
+export const isPPLFilterValid = (
+  query: string,
+  setToast: (
+    title: string,
+    color?: string,
+    text?: React.ReactChild | undefined,
+    side?: string | undefined
+  ) => void
+) => {
+  if (checkIndexExists(query)) {
+    setToast('Please remove index from PPL Filter', 'danger', undefined);
+    return false;
+  }
+
+  if (checkTimeRangeExists(query)) {
+    setToast('Please remove time filter from PPL Filter', 'danger', undefined);
+    return false;
+  }
+
+  if (checkFieldsExists(query)) {
+    setToast('Please remove fields from PPL Filter', 'danger', undefined);
+    return false;
+  }
+
+  return true;
+};
+
+// This function renders the visualzation based of its type
+export const displayVisualization = (data: any, type: string) => {
+  if (data === undefined) return;
+  // console.log('in charts rendering');
+  let vizComponent!: JSX.Element;
+  switch (type) {
+    case 'bar': {
+      vizComponent = (
+        <Bar
+          visualizations={data}
+          layoutConfig={{
+            yaxis: {
+              automargin: true,
+            },
+          }}
+        />
+      );
+      break;
+    }
+    case 'horizontalBar': {
+      vizComponent = (
+        <HorizontalBar
+          visualizations={data}
+          layoutConfig={{
+            yaxis: {
+              automargin: true,
+            },
+          }}
+        />
+      );
+      break;
+    }
+    case 'line': {
+      vizComponent = (
+        <Line
+          visualizations={data}
+          layoutConfig={{
+            yaxis: {
+              automargin: true,
+            },
+          }}
+        />
+      );
+      break;
+    }
+    default: {
+      vizComponent = <></>;
+      break;
+    }
+  }
+  return vizComponent;
 };
