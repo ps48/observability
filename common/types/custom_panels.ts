@@ -33,17 +33,17 @@ export type SavedVisualizationType = {
   name: string;
   query: string;
   type: string;
-  time_field: string;
+  timeField: string;
   description: string;
-  selected_date_range: {
-    start: string;
-    end: string;
-    test: string;
-  };
-  selected_fields: {
-    text: string;
-    tokens: string[];
-  };
+  // selected_date_range: {
+  //   start: string;
+  //   end: string;
+  //   test: string;
+  // };
+  // selected_fields: {
+  //   text: string;
+  //   tokens: string[];
+  // };
 };
 
 export type pplResponse = {

@@ -45,7 +45,7 @@ export function PanelsRouter(router: IRouter) {
           },
         });
       } catch (error) {
-        console.log('Issue in fetching panels:', error);
+        console.log('Issue in fetching panel list:', error);
         return response.custom({
           statusCode: error.statusCode || 500,
           body: error.message,
@@ -210,7 +210,7 @@ export function PanelsRouter(router: IRouter) {
           },
         });
       } catch (error) {
-        console.log('Issue in renaming panel', error);
+        console.log('Issue in cloning panel', error);
         return response.custom({
           statusCode: error.statusCode || 500,
           body: error.message,

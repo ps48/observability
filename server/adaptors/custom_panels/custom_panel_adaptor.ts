@@ -11,8 +11,8 @@
 
 import { PanelType, VisualizationType } from '../../../common/types/custom_panels';
 import { ILegacyScopedClusterClient } from '../../../../../src/core/server';
+import { PPL_CONTAINS_TIMESTAMP_REGEX } from '../../../common/constants/shared';
 
-// NOTE: Need to add more functions for using panel APIs
 export class CustomPanelsAdaptor {
   // index a panel
   indexPanel = async function (
@@ -77,7 +77,7 @@ export class CustomPanelsAdaptor {
     } catch (error) {
       if (error.body.error.type === 'index_not_found_exception') {
         return [];
-      } else throw new Error('View Panels Error:' + error);
+      } else throw new Error('View Panel List Error:' + error);
     }
   };
 
@@ -101,7 +101,7 @@ export class CustomPanelsAdaptor {
       });
       return { status: 'OK', message: response };
     } catch (error) {
-      throw new Error('Delete Panel Error:' + error);
+      throw new Error('Delete Panel List Error:' + error);
     }
   };
 
@@ -137,7 +137,7 @@ export class CustomPanelsAdaptor {
       const response = await this.updatePanel(client, panelId, updatePanelBody);
       return response.objectId;
     } catch (error) {
-      throw new Error('Create New Panel Error:' + error);
+      throw new Error('Rename Panel Error:' + error);
     }
   };
 
@@ -189,8 +189,22 @@ export class CustomPanelsAdaptor {
       const response = await this.updatePanel(client, panelId, updatePanelBody);
       return response.objectId;
     } catch (error) {
-      throw new Error('Create New Panel Error:' + error);
+      throw new Error('Add Panel Filter Error:' + error);
     }
+  };
+
+  // Check for time filter in query
+  checkTimeRangeExists = (query: string) => {
+    return PPL_CONTAINS_TIMESTAMP_REGEX.test(query);
+  };
+
+  // savedObjects Visualzation Query Builder
+  // removes time filter from query
+  // NOTE: this is a separate function to add more fields for future releases
+  savedVisualizationsQueryBuilder = (query: string) => {
+    return this.checkTimeRangeExists(query)
+      ? query.replace(PPL_CONTAINS_TIMESTAMP_REGEX, '')
+      : query;
   };
 
   // gets list of panels stored in index
@@ -202,11 +216,9 @@ export class CustomPanelsAdaptor {
       return response.observabilityObjectList.map((visualization: any) => ({
         id: visualization.objectId,
         name: visualization.savedVisualization.name,
-        description: visualization.savedVisualization.description,
-        query: visualization.savedVisualization.query,
+        query: this.savedVisualizationsQueryBuilder(visualization.savedVisualization.query),
         type: visualization.savedVisualization.type,
-        selected_date_range: visualization.savedVisualization.selected_date_range,
-        selected_fields: visualization.savedVisualization.selected_fields,
+        timeField: visualization.savedVisualization.selected_timestamp.name,
       }));
     } catch (error) {
       if (error.body.error.type === 'index_not_found_exception') {
@@ -286,6 +298,39 @@ export class CustomPanelsAdaptor {
     }
   };
 
+  //Add Visualization in the Panel from Event Explorer
+  addVisualizationFromEvents = async (
+    client: ILegacyScopedClusterClient,
+    panelId: string,
+    paramVisualization: {
+      id: string;
+      title: string;
+      query: string;
+      type: string;
+      timeField: string;
+    }
+  ) => {
+    try {
+      const allPanelVisualizations = await this.getVisualizations(client, panelId);
+      const newVisualization = {
+        ...paramVisualization,
+        query: this.savedVisualizationsQueryBuilder(paramVisualization.query),
+      };
+      let newDimensions;
+      newDimensions = this.getNewVizDimensions(allPanelVisualizations);
+      const newPanelVisualizations = [
+        ...allPanelVisualizations,
+        { ...newVisualization, ...newDimensions },
+      ];
+      const updatePanelResponse = await this.updatePanel(client, panelId, {
+        visualizations: newPanelVisualizations,
+      });
+      return newPanelVisualizations;
+    } catch (error) {
+      throw new Error('Add/Replace Visualization Error:' + error);
+    }
+  };
+
   //Delete a Visualization in the Panel
   deleteVisualization = async (
     client: ILegacyScopedClusterClient,
@@ -334,7 +379,7 @@ export class CustomPanelsAdaptor {
       });
       return filteredPanelVisualizations;
     } catch (error) {
-      throw new Error('Delete Visualization Error:' + error);
+      throw new Error('Edit Visualizations Error:' + error);
     }
   };
 }

@@ -208,7 +208,7 @@ export const savedVisualizationsQueryBuilder = (
   fields: { text: string; tokens: string[] }
 ) => {
   let finalQuery = '';
-  finalQuery = insertFieldsToQuery({ rawQuery: query, fields: fields.tokens });
+  finalQuery = query; //insertFieldsToQuery({ rawQuery: query, fields: fields.tokens });
   finalQuery = checkTimeRangeExists(finalQuery)
     ? finalQuery.replace(PPL_CONTAINS_TIMESTAMP_REGEX, '')
     : finalQuery;

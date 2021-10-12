@@ -178,7 +178,7 @@ export const VisaulizationFlyout = ({
     } else {
       // visualizationsList = panelVisualizations;
       // newDimensions = getNewVizDimensions(panelVisualizations);
-
+      console.log('added time', newVisualizationTimeField);
       http
         .post(`${CUSTOM_PANELS_API_PREFIX}/visualizations`, {
           body: JSON.stringify({
@@ -425,12 +425,14 @@ export const VisaulizationFlyout = ({
     for (var i = 0; i < savedVisualizations.length; i++) {
       const visualization = savedVisualizations[i];
       if (visualization.id === selectValue) {
-        setPPLQuery(
-          savedVisualizationsQueryBuilder(visualization.query, visualization.selected_fields)
-        );
+        setPPLQuery(visualization.query);
+        // setPPLQuery(
+        //   savedVisualizationsQueryBuilder(visualization.query, visualization.selected_fields)
+        // );
         setNewVisualizationTitle(visualization.name);
         setNewVisualizationType(visualization.type);
-        setNewVisualizationTimeField(visualization.time_field);
+        console.log('selected time', visualization.timeField);
+        setNewVisualizationTimeField(visualization.timeField);
         break;
       }
     }
