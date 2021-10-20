@@ -306,26 +306,6 @@ export class CustomPanelsAdaptor {
     }
   };
 
-  //Delete a Visualization in the Panel
-  deleteVisualization = async (
-    client: ILegacyScopedClusterClient,
-    panelId: string,
-    visualizationId: string
-  ) => {
-    try {
-      const allPanelVisualizations = await this.getVisualizations(client, panelId);
-      const filteredPanelVisualizations = allPanelVisualizations.filter(
-        (panelVisualization: VisualizationType) => panelVisualization.id != visualizationId
-      );
-      const updatePanelResponse = await this.updatePanel(client, panelId, {
-        visualizations: filteredPanelVisualizations,
-      });
-      return filteredPanelVisualizations;
-    } catch (error) {
-      throw new Error('Delete Visualization Error:' + error);
-    }
-  };
-
   //Edits all Visualizations in the Panel
   editVisualization = async (
     client: ILegacyScopedClusterClient,
