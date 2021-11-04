@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Flyout Container component renders empty flyout Container 1`] = `
+<div>
+  <EuiFlyout
+    aria-labelledby="sampleFlyout"
+    onClose={[Function]}
+    ownFocus={false}
+  >
+    <div />
+    <div />
+    <div />
+  </EuiFlyout>
+</div>
+`;

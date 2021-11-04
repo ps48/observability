@@ -13,17 +13,18 @@ import { configure, mount } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
 import React from 'react';
 import httpClientMock from '../../../../../../test/__mocks__/httpClientMock';
-import { chromeServiceMock } from '../../../../../../../../src/core/public/mocks';
 import { PanelGrid } from '../panel_grid';
 import PPLService from '../../../../../services/requests/ppl';
 import { VisualizationType } from '../../../../../../common/types/custom_panels';
+import { coreStartMock } from '../../../../../../test/__mocks__/coreMocks';
+import { waitFor } from '@testing-library/react';
 
 describe('Panel Grid Component', () => {
   configure({ adapter: new Adapter() });
 
-  it('renders panel grid component with empty visualizations', () => {
+  it('renders panel grid component with empty visualizations', async () => {
     const http = httpClientMock;
-    const chrome = chromeServiceMock.createStartContract();
+    const core = coreStartMock;
     const panelId = '';
     const panelVisualizations: VisualizationType[] = [];
     const setPanelVisualizations = jest.fn();
@@ -41,7 +42,7 @@ describe('Panel Grid Component', () => {
       <PanelGrid
         http={http}
         panelId={panelId}
-        chrome={chrome}
+        chrome={core.chrome}
         panelVisualizations={panelVisualizations}
         setPanelVisualizations={setPanelVisualizations}
         editMode={editMode}
@@ -55,7 +56,10 @@ describe('Panel Grid Component', () => {
         editActionType={editActionType}
       />
     );
+    wrapper.update();
 
-    expect(wrapper).toMatchSnapshot();
+    await waitFor(() => {
+      expect(wrapper).toMatchSnapshot();
+    });
   });
 });

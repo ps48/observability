@@ -17,55 +17,21 @@ import { VisualizationContainer } from '../visualization_container';
 import httpClientMock from '../../../../../../test/__mocks__/httpClientMock';
 import { HttpResponse } from '../../../../../../../../src/core/public';
 import { waitFor } from '@testing-library/react';
+import {
+  sampleSavedVisualization,
+  samplePPLResponse,
+} from '../../../../../../test/panels_constants';
 
 describe('Visualization Container Component', () => {
   configure({ adapter: new Adapter() });
 
   it('renders add visualization container', async () => {
     httpClientMock.get = jest.fn(() =>
-      Promise.resolve(({
-        visualization: {
-          id: 'oiuccXwBYVazWqOO1e06',
-          name: 'Flight Count by Origin',
-          query:
-            'source=opensearch_dashboards_sample_data_flights | fields Carrier,FlightDelayMin | stats sum(FlightDelayMin) as delays by Carrier',
-          type: 'bar',
-          timeField: 'timestamp',
-        },
-      } as unknown) as HttpResponse)
+      Promise.resolve((sampleSavedVisualization as unknown) as HttpResponse)
     );
 
     httpClientMock.post = jest.fn(() =>
-      Promise.resolve(({
-        data: {
-          'avg(FlightDelayMin)': [
-            53.65384615384615,
-            45.36144578313253,
-            63.1578947368421,
-            46.81318681318681,
-          ],
-          Carrier: [
-            'BeatsWest',
-            'Logstash Airways',
-            'OpenSearch Dashboards Airlines',
-            'OpenSearch-Air',
-          ],
-        },
-        metadata: {
-          fields: [
-            { name: 'avg(FlightDelayMin)', type: 'double' },
-            { name: 'Carrier', type: 'keyword' },
-          ],
-        },
-        size: 4,
-        status: 200,
-        jsonData: [
-          { 'avg(FlightDelayMin)': 53.65384615384615, Carrier: 'BeatsWest' },
-          { 'avg(FlightDelayMin)': 45.36144578313253, Carrier: 'Logstash Airways' },
-          { 'avg(FlightDelayMin)': 63.1578947368421, Carrier: 'OpenSearch Dashboards Airlines' },
-          { 'avg(FlightDelayMin)': 46.81318681318681, Carrier: 'OpenSearch-Air' },
-        ],
-      } as unknown) as HttpResponse)
+      Promise.resolve((samplePPLResponse as unknown) as HttpResponse)
     );
 
     const editMode = true;
@@ -93,7 +59,8 @@ describe('Visualization Container Component', () => {
         cloneVisualization={cloneVisualization}
         pplFilterValue={pplFilterValue}
         showFlyout={showFlyout}
-        removeVisualization={removeVisualization} />
+        removeVisualization={removeVisualization}
+      />
     );
     wrapper.update();
 

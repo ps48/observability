@@ -24,7 +24,7 @@ describe('Empty panel view component', () => {
     );
 
     expect(wrapper).toMatchSnapshot();
-    // expect(wrapper.find('EuiButton').prop('disabled')).toBeTruthy();
+    expect(wrapper.find('EuiButton').prop('disabled')).toBe(true);
   });
 
   it('renders empty panel view with enabled popover', () => {
@@ -34,7 +34,7 @@ describe('Empty panel view component', () => {
     );
 
     expect(wrapper).toMatchSnapshot();
-    // expect(wrapper.find('EuiButton').prop('disabled')).toBeFalsy();
+    expect(wrapper.find('EuiButton').prop('disabled')).toBe(false);
   });
 
 });
