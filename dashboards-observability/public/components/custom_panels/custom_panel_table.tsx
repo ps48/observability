@@ -261,14 +261,7 @@ export const CustomPanelTable = ({
       sortable: true,
       render: (value) => moment(new Date(value)).format(UI_DATE_FORMAT),
     },
-  ] as Array<
-    EuiTableFieldDataColumnType<{
-      name: string;
-      id: string;
-      dateCreated: string;
-      dateModified: string;
-    }>
-  >;
+  ] as Array<EuiTableFieldDataColumnType<CustomPanelListType>>;
 
   return (
     <div style={pageStyles}>

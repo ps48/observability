@@ -101,3 +101,75 @@ export const sampleMergedVisualizations = [
     h: 4,
   },
 ];
+
+export const panelsData = {
+  panels: [
+    {
+      name: 'Test Panel 1',
+      id: 'L8Sx53wBDp0rvEg3yoLb',
+      dateCreated: 1635974761179,
+      dateModified: 1635974771296,
+    },
+    {
+      name: 'Test Panel 2',
+      id: 'lsQfznwBDp0rvEg3W2wH',
+      dateCreated: 1635545733895,
+      dateModified: 1635979024055,
+    },
+    {
+      name: 'Test Panel 3',
+      id: 'b8Sc4nwBDp0rvEg3F3Fk',
+      dateCreated: 1635889452900,
+      dateModified: 1635979888682,
+    },
+    {
+      name: 'Test Panel 4',
+      id: 'P8Qd4nwBDp0rvEg39HG_',
+      dateCreated: 1635881186494,
+      dateModified: 1636049456718,
+    },
+  ],
+};
+
+export const samplePanel = {
+  objectId: 'L8Sx53wBDp0rvEg3yoLb',
+  lastUpdatedTimeMs: 1636053619774,
+  createdTimeMs: 1635545733895,
+  tenant: '',
+  operationalPanel: {
+    name: 'Test Panel 1',
+    visualizations: [
+      {
+        id: 'panel_viz_bae51802-b647-4c16-ac04-9cfa87aa0002',
+        savedVisualizationId: 'oiuccXwBYVazWqOO1e06',
+        x: 0,
+        y: 0,
+        w: 10,
+        h: 2,
+      },
+      // {
+      //   id: 'panel_viz_8c47e96c-2494-407a-95e0-56a4790af2f5',
+      //   savedVisualizationId: 'ScS83HwBDp0rvEg3e3CC',
+      //   x: 0,
+      //   y: 2,
+      //   w: 6,
+      //   h: 4,
+      // },
+    ],
+    timeRange: { to: 'now/y', from: 'now/y' },
+    queryFilter: { query: "where host = 'www.opensearch.org'", language: 'ppl' },
+  },
+};
+
+export const sampleEmptyPanel = {
+  objectId: 'L8Sx53wBDp0rvEg3yoLb',
+  lastUpdatedTimeMs: 1636053619774,
+  createdTimeMs: 1635545733895,
+  tenant: '',
+  operationalPanel: {
+    name: 'Test Panel 1',
+    visualizations: [],
+    timeRange: { to: 'now/y', from: 'now/y' },
+    queryFilter: { query: "where host = 'www.opensearch.org'", language: 'ppl' },
+  },
+};
