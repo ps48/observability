@@ -115,8 +115,12 @@ export const Search = (props: any) => {
             dslService={dslService}
           />
         </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiBadge color="hollow" onClick={() => showFlyout()}>
+        <EuiFlexItem grow={false} style={{ marginLeft: '-4px' }}>
+          <EuiBadge
+            color="hollow"
+            onClick={() => showFlyout()}
+            style={{ height: '40px', color: '#006BB4' }}
+          >
             PPL
           </EuiBadge>
         </EuiFlexItem>
