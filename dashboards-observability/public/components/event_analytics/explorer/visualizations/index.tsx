@@ -37,6 +37,7 @@ interface IExplorerVisualizationsProps {
   visualizations: IVisualizationContainerProps;
   handleOverrideTimestamp: (field: IField) => void;
   callback?: any;
+  changeIsValidConfigOptionState: (isValidConfigOptionSelected: boolean) => void;
   queryManager: QueryManager;
 }
 
@@ -52,6 +53,7 @@ export const ExplorerVisualizations = ({
   visualizations,
   handleOverrideTimestamp,
   callback,
+  changeIsValidConfigOptionState,
   queryManager,
 }: IExplorerVisualizationsProps) => {
   const { vis } = visualizations;
@@ -87,15 +89,9 @@ export const ExplorerVisualizations = ({
     }
   };
 
-  const syntheticResize = () => {
-    const event = window.document.createEvent('UIEvents');
-    event.initUIEvent('resize', true, false, window, 0);
-    window.dispatchEvent(event);
-  };
-
   return (
     <div id="vis__mainContent">
-      <EuiResizableContainer onPanelWidthChange={syntheticResize}>
+      <EuiResizableContainer>
         {(EuiResizablePanel, EuiResizableButton) => (
           <>
             <EuiResizablePanel
@@ -154,6 +150,7 @@ export const ExplorerVisualizations = ({
                 curVisId={curVisId}
                 setCurVisId={setCurVisId}
                 callback={callback}
+                changeIsValidConfigOptionState={changeIsValidConfigOptionState}
               />
             </EuiResizablePanel>
           </>

@@ -21,7 +21,6 @@ import {
   AVAILABLE_FIELDS,
   GROUPBY,
   SELECTED_FIELDS,
-  DISABLED_COLOUR
 } from '../../../../../../../../common/constants/explorer';
 import {
   ConfigList,
@@ -178,7 +177,7 @@ export const LogsViewConfigPanelItem = ({
           <EuiText size="xs">
             <EuiIcon
               type="cross"
-              color={queriedFields.length === 0 ? "danger" : DISABLED_COLOUR}
+              color="danger"
               onClick={() => handleServiceRemove(index, GROUPBY)}
             />
           </EuiText>

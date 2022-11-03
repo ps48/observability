@@ -4,8 +4,6 @@
  */
 
 // requests constants
-export const VISUALIZATION = 'viz';
-export const SAVED_VISUALIZATION = 'savedVisualization';
 export const PPL_PROMETHEUS_CATALOG_REQUEST =
   'show catalogs | where CONNECTOR_TYPE="PROMETHEUS" | fields CATALOG_NAME';
 

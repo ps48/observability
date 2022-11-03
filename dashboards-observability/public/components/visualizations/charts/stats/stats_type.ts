@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Metrics } from './metrics';
+import { Stats } from './stats';
 import { getPlotlySharedConfigs, getPlotlyCategory } from '../shared/shared_configs';
 import { LensIconChartLine } from '../../assets/chart_line';
 import { PLOTLY_COLOR } from '../../../../../common/constants/shared';
@@ -16,9 +16,9 @@ import {
   ConfigChartOptions,
   TextInputFieldItem,
 } from '../../../event_analytics/explorer/visualizations/config_panel/config_panes/config_controls';
-import { fetchConfigObject } from '../../../event_analytics/utils/utils';
+import { fetchConfigObject } from '../../../../components/event_analytics/utils/utils';
 import { ConfigAvailability } from '../../../event_analytics/explorer/visualizations/config_panel/config_panes/config_controls/config_availability';
-import { DEFAULT_METRICS_CHART_PARAMETERS } from '../../../../../common/constants/explorer';
+import { DEFAULT_STATS_CHART_PARAMETERS } from '../../../../../common/constants/explorer';
 
 const sharedConfigs = getPlotlySharedConfigs();
 const VIS_CATEGORY = getPlotlyCategory();
@@ -30,14 +30,14 @@ const {
   DefaultTitleSize,
   DefaultValueSize,
   BaseThreshold,
-} = DEFAULT_METRICS_CHART_PARAMETERS;
+} = DEFAULT_STATS_CHART_PARAMETERS;
 
-export const createMetricsTypeDefinition = (params: any = {}) => ({
-  name: 'metrics',
-  type: 'metrics',
-  id: 'metrics',
-  label: 'Metrics',
-  fulllabel: 'Metrics',
+export const createStatsTypeDefinition = (params: any = {}) => ({
+  name: 'stats',
+  type: 'stats',
+  id: 'stats',
+  label: 'Stats',
+  fulllabel: 'Stats',
   icontype: 'stats',
   category: VIS_CATEGORY.BASICS,
   icon: LensIconChartLine,
@@ -193,5 +193,5 @@ export const createMetricsTypeDefinition = (params: any = {}) => ({
       ...sharedConfigs.config,
     },
   },
-  component: Metrics,
+  component: Stats,
 });

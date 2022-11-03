@@ -220,6 +220,12 @@ export class CustomPanelsAdaptor {
       user_configs: visualization.savedVisualization.hasOwnProperty('user_configs')
         ? JSON.parse(visualization.savedVisualization.user_configs)
         : {},
+      sub_type: visualization.savedVisualization.hasOwnProperty('sub_type')
+        ? visualization.savedVisualization.sub_type
+        : '',
+      units_of_measure: visualization.savedVisualization.hasOwnProperty('units_of_measure')
+        ? visualization.savedVisualization.units_of_measure
+        : '',
       ...(visualization.savedVisualization.application_id
         ? { application_id: visualization.savedVisualization.application_id }
         : {}),
@@ -329,6 +335,7 @@ export class CustomPanelsAdaptor {
   ) => {
     try {
       const allPanelVisualizations = await this.getVisualizations(client, panelId);
+      console.log('allPanelVisualizations', allPanelVisualizations, savedVisualizationId);
 
       let newDimensions;
       let visualizationsList = [] as VisualizationType[];

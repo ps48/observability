@@ -78,6 +78,13 @@ export enum VIS_CHART_TYPES {
   Pie = 'pie',
   HeatMap = 'heatmap',
   Text = 'text',
+  Gauge = 'gauge',
+  Histogram = 'histogram',
+  TreeMap = 'tree_map',
+  Scatter = 'scatter',
+  LogsView = 'logs_view',
+  Stats = 'stats',
+  TableView = 'data_table',
 }
 
 export const NUMERICAL_FIELDS = ['short', 'integer', 'long', 'float', 'double'];
@@ -89,6 +96,13 @@ export const ENABLED_VIS_TYPES = [
   VIS_CHART_TYPES.Pie,
   VIS_CHART_TYPES.HeatMap,
   VIS_CHART_TYPES.Text,
+  VIS_CHART_TYPES.TreeMap,
+  VIS_CHART_TYPES.Gauge,
+  VIS_CHART_TYPES.Histogram,
+  VIS_CHART_TYPES.Scatter,
+  VIS_CHART_TYPES.LogsView,
+  VIS_CHART_TYPES.Stats,
+  VIS_CHART_TYPES.TableView,
 ];
 
 // Live tail constants
@@ -158,7 +172,7 @@ export const DEFAULT_CHART_STYLES: DefaultChartStylesProps = {
   DefaultModeLine: 'lines',
   Interpolation: 'spline',
   LineWidth: 2,
-  FillOpacity: 70,
+  FillOpacity: 40,
   MarkerSize: 5,
   ShowLegend: 'show',
   LegendPosition: 'v',
@@ -179,13 +193,3 @@ export enum BarOrientation {
   horizontal = 'h',
   vertical = 'v',
 }
-
-export const PLOT_MARGIN = {
-  l: 30,
-  r: 5,
-  b: 30,
-  t: 50,
-  pad: 4,
-};
-
-export const WAITING_TIME_ON_USER_ACTIONS = 300;

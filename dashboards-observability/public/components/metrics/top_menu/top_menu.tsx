@@ -12,18 +12,27 @@ import {
   EuiButton,
   EuiFieldSearch,
   EuiButtonIcon,
+  EuiPopover,
+  EuiPopoverFooter,
+  EuiButtonEmpty,
+  EuiComboBoxOptionOption,
 } from '@elastic/eui';
 import { DurationRange } from '@elastic/eui/src/components/date_picker/types';
-import { useDispatch, useSelector } from 'react-redux';
 import { uiSettingsService } from '../../../../common/utils';
 import React, { useState } from 'react';
 import { MetricType } from '../../../../common/types/metrics';
 import { resolutionOptions } from '../../../../common/constants/metrics';
+import { MetricsExportPanel } from './metrics_export_panel';
+import { CoreStart } from '../../../../../../src/core/public';
+
 import './top_menu.scss';
-import { allAvailableMetricsSelector, selectMetric } from '../redux/slices/metrics_slice';
-import { SearchBar } from '../sidebar/search_bar';
+import { useSelector } from 'react-redux';
+import { sortMetricLayout, updateMetricsWithSelections } from '../helpers/utils';
+import { metricsLayoutSelector } from '../redux/slices/metrics_slice';
+import SavedObjects from '../../../services/saved_objects/event_analytics/saved_objects';
 
 interface TopMenuProps {
+  http: CoreStart['http'];
   IsTopPanelDisabled: boolean;
   startTime: ShortDate;
   endTime: ShortDate;
@@ -39,9 +48,11 @@ interface TopMenuProps {
   spanValue: number;
   setSpanValue: React.Dispatch<React.SetStateAction<number>>;
   resolutionSelectId: string;
+  savedObjects: SavedObjects;
 }
 
 export const TopMenu = ({
+  http,
   IsTopPanelDisabled,
   startTime,
   endTime,
@@ -57,12 +68,18 @@ export const TopMenu = ({
   spanValue,
   setSpanValue,
   resolutionSelectId,
+  savedObjects,
 }: TopMenuProps) => {
-  const [originalPanelVisualizations, setOriginalPanelVisualizations] = useState<MetricType[]>([]);
+  // Redux tools
+  const metricsLayout = useSelector(metricsLayoutSelector);
+  const sortedMetricsLayout = sortMetricLayout([...metricsLayout]);
 
-  const dispatch = useDispatch();
-  const allAvailableMetrics = useSelector(allAvailableMetricsSelector);
-  const handleAddMetric = (metric: any) => dispatch(selectMetric(metric));
+  const [visualizationsMetaData, setVisualizationsMetaData] = useState<any>([]);
+  const [originalPanelVisualizations, setOriginalPanelVisualizations] = useState<MetricType[]>([]);
+  const [isSavePanelOpen, setIsSavePanelOpen] = useState(false);
+  const [selectedPanelOptions, setSelectedPanelOptions] = useState<
+    EuiComboBoxOptionOption<unknown>[] | undefined
+  >([]);
 
   // toggle between panel edit mode
   const editPanel = (editType: string) => {
@@ -88,6 +105,12 @@ export const TopMenu = ({
     setResolutionValue(e.target.value);
   };
 
+  const cancelButton = (
+    <EuiButton size="s" iconType="cross" color="danger" onClick={() => editPanel('cancel')}>
+      Cancel
+    </EuiButton>
+  );
+
   const saveButton = (
     <EuiButton size="s" iconType="save" onClick={() => editPanel('save')}>
       Save view
@@ -104,16 +127,84 @@ export const TopMenu = ({
       Edit view
     </EuiButton>
   );
+
+  const Savebutton = (
+    <EuiButton
+      iconSide="right"
+      onClick={() => {
+        setIsSavePanelOpen((staleState) => !staleState);
+      }}
+      data-test-subj="metrics__saveManagementPopover"
+      iconType="arrowDown"
+      isDisabled={IsTopPanelDisabled}
+    >
+      Save
+    </EuiButton>
+  );
+
+  const handleSavingObjects = async () => {
+    let savedMetricIds = [];
+    let savedMetricsInPanels = [];
+    // const allSelectedPanelIds = selectedPanelOptions.map((panelOption) => panelOption.panel.id);
+
+    try {
+      savedMetricIds = await Promise.all(
+        sortedMetricsLayout.map(async (metricLayout, index) => {
+          const updatedMetric = updateMetricsWithSelections(
+            visualizationsMetaData[index],
+            startTime,
+            endTime,
+            spanValue + resolutionValue
+          );
+
+          if (metricLayout.metricType === 'prometheusMetric') {
+            return await savedObjects.createSavedVisualization(updatedMetric);
+          } else {
+            return await savedObjects.updateSavedVisualizationById({
+              ...updatedMetric,
+              objectId: metricLayout.id,
+            });
+          }
+        })
+      );
+      console.log('savedMetricIds', savedMetricIds);
+    } catch (e) {
+      console.error('Issue in saving metrics');
+    }
+
+    try {
+      console.log('allSelectedPanelIds', selectedPanelOptions);
+      savedMetricsInPanels = await Promise.all(
+        savedMetricIds.map(async (metricObject) => {
+          return await savedObjects.bulkUpdateCustomPanel({
+            selectedCustomPanels: selectedPanelOptions,
+            savedVisualizationId: metricObject.objectId,
+          });
+        })
+      );
+
+      console.log('savedMetricsInPanels', savedMetricsInPanels);
+    } catch (e) {
+      console.error('Issue in saving metrics to panels');
+    }
+
+    // console.log('savedMetricIds', savedMetricIds);
+  };
   return (
     <>
       <EuiPageHeader>
         <EuiPageHeaderSection>
           <EuiFlexGroup className="search-bar-top-menu">
             <EuiFlexItem>
-              <SearchBar
-                allAvailableMetrics={allAvailableMetrics}
-                handleAddMetric={handleAddMetric}
+              <EuiFieldSearch
+                placeholder="Search metrics"
+                isClearable={true}
+                aria-label="Use aria labels when no actual label is in use"
+                fullWidth={true}
               />
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <EuiButtonIcon iconType="menuLeft"></EuiButtonIcon>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiPageHeaderSection>
@@ -151,15 +242,45 @@ export const TopMenu = ({
               />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <EuiButton
-                iconSide="right"
-                onClick={() => {}}
-                data-test-subj="metrics__savePopover"
-                iconType="arrowDown"
-                isDisabled={IsTopPanelDisabled}
+              <EuiPopover
+                button={Savebutton}
+                isOpen={isSavePanelOpen}
+                closePopover={() => setIsSavePanelOpen(false)}
               >
-                Save
-              </EuiButton>
+                <MetricsExportPanel
+                  http={http}
+                  visualizationsMetaData={visualizationsMetaData}
+                  setVisualizationsMetaData={setVisualizationsMetaData}
+                  sortedMetricsLayout={sortedMetricsLayout}
+                  selectedPanelOptions={selectedPanelOptions}
+                  setSelectedPanelOptions={setSelectedPanelOptions}
+                />
+                <EuiPopoverFooter>
+                  <EuiFlexGroup justifyContent="flexEnd">
+                    <EuiFlexItem grow={false}>
+                      <EuiButtonEmpty
+                        size="s"
+                        onClick={() => setIsSavePanelOpen(false)}
+                        data-test-subj="metrics__SaveCancel"
+                      >
+                        Cancel
+                      </EuiButtonEmpty>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiButton
+                        size="s"
+                        fill
+                        onClick={() => {
+                          handleSavingObjects().then(() => setIsSavePanelOpen(false));
+                        }}
+                        data-test-subj="metrics__SaveConfirm"
+                      >
+                        Save
+                      </EuiButton>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </EuiPopoverFooter>
+              </EuiPopover>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiPageHeaderSection>
@@ -167,6 +288,7 @@ export const TopMenu = ({
       <EuiFlexGroup gutterSize="s" justifyContent="flexEnd">
         {editMode ? (
           <>
+            <EuiFlexItem grow={false}>{cancelButton}</EuiFlexItem>
             <EuiFlexItem grow={false}>{saveButton}</EuiFlexItem>
           </>
         ) : (

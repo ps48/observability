@@ -184,7 +184,7 @@ export default class SavedObjects {
       description: params.description,
       subType: params.subType,
       unitsOfMeasure: params.unitsOfMeasure,
-      selectedLabels: params.selectedLabels
+      selectedLabels: params.selectedLabels,
     });
 
     finalParams.object_id = params.objectId;
@@ -247,7 +247,7 @@ export default class SavedObjects {
       description: params.description,
       subType: params.subType,
       unitsOfMeasure: params.unitsOfMeasure,
-      selectedLabels: params.selectedLabels
+      selectedLabels: params.selectedLabels,
     });
 
     return await this.http.post(

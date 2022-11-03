@@ -5,7 +5,8 @@
 
 import './sidebar.scss';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { cloneDeep } from 'lodash';
 import { EuiTitle, EuiSpacer, EuiAccordion, EuiLink } from '@elastic/eui';
 import { I18nProvider } from '@osd/i18n/react';
 import { batch, useDispatch, useSelector } from 'react-redux';
@@ -15,7 +16,6 @@ import {
   selectMetric,
   loadMetrics,
   selectedMetricsSelector,
-  recentlyCreatedMetricsSelector,
 } from '../redux/slices/metrics_slice';
 import { CoreStart } from '../../../../../../src/core/public';
 import PPLService from '../../../services/requests/ppl';
@@ -31,7 +31,6 @@ export const Sidebar = (props: ISidebarProps) => {
 
   const availableMetrics = useSelector(availableMetricsSelector);
   const selectedMetrics = useSelector(selectedMetricsSelector);
-  const recentlyCreatedMetrics = useSelector(recentlyCreatedMetricsSelector);
 
   useEffect(() => {
     batch(() => {
@@ -47,25 +46,17 @@ export const Sidebar = (props: ISidebarProps) => {
 
   return (
     <I18nProvider>
-      <section className="sidebarHeight">
+      <section className="sidebarHeight ">
         <EuiAccordion
           initialIsOpen
           id="recentlyCreatedMetricsSelector"
           buttonContent={
             <EuiTitle size="xxxs">
-              <span>Recently Created Metrics</span>
+              <span>Recently Created Fields</span>
             </EuiTitle>
           }
           paddingSize="xs"
-        >
-          <ul className="metricsList">
-            {recentlyCreatedMetrics.map((metric: any) => (
-              <li key={metric.id}>
-                <EuiLink onClick={() => handleAddMetric(metric)}>{metric.name}</EuiLink>
-              </li>
-            ))}
-          </ul>
-        </EuiAccordion>
+        />
         <EuiSpacer size="s" />
         <EuiAccordion
           initialIsOpen
@@ -77,7 +68,7 @@ export const Sidebar = (props: ISidebarProps) => {
           }
           paddingSize="xs"
         >
-          <ul className="metricsList">
+          <ul>
             {selectedMetrics.map((metric: any) => (
               <li key={metric.id}>
                 <EuiLink onClick={() => handleRemoveMetric(metric)}>{metric.name}</EuiLink>
@@ -96,16 +87,13 @@ export const Sidebar = (props: ISidebarProps) => {
           }
           paddingSize="xs"
         >
-          <ul className="metricsList">
-            {availableMetrics.slice(0, 100).map((metric: any) => (
+          <ul>
+            {availableMetrics.map((metric: any) => (
               <li key={metric.id}>
                 <EuiLink onClick={() => handleAddMetric(metric)}>{metric.name}</EuiLink>
               </li>
             ))}
           </ul>
-          {availableMetrics.length > 100 && (
-            <p>Use search bar for searching through all metrics.</p>
-          )}
         </EuiAccordion>
       </section>
     </I18nProvider>

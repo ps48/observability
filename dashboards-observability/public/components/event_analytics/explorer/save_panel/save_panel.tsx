@@ -12,9 +12,6 @@ import {
   EuiSpacer,
   EuiFieldText,
   EuiSwitch,
-  EuiIconTip,
-  EuiFlexItem,
-  EuiToolTip
 } from '@elastic/eui';
 import { useEffect } from 'react';
 import { isEmpty, isEqual } from 'lodash';
@@ -133,21 +130,17 @@ export const SavePanel = ({
           data-test-subj="eventExplorer__querySaveName"
         />
       </EuiFormRow>
-      {showOptionList && (
+      {showOptionList && (isEqual(curVisId, 'line')) && spanValue && (
         <>
           <EuiFormRow display="columnCompressedSwitch">
-          <EuiToolTip
-          content="Only Time Series visualization and a query including stats/span can be saved as Metric" >
             <EuiSwitch
               showLabel={true}
               label="Save as Metric"
               checked={checked}
               onChange={onToggleChange}
               compressed
-              disabled = {!((isEqual(curVisId, 'line')) && spanValue)}
             />
-          </EuiToolTip>
-          </EuiFormRow>        
+          </EuiFormRow>
           {checked && (
             <>
               <EuiSpacer size="s" />

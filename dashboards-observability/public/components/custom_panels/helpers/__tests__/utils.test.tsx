@@ -24,10 +24,6 @@ import {
   samplePPLEmptyResponse,
   samplePPLResponse,
   sampleSavedVisualization,
-  sampleSavedVisualizationForHorizontalBar,
-  sampleSavedVisualizationForLine,
-  sampleSavedVisualizationForPie,
-  sampleSavedVisualizationForTreeMap,
 } from '../../../../../test/panels_constants';
 import { PPL_DATE_FORMAT } from '../../../../../common/constants/shared';
 import React from 'react';
@@ -108,31 +104,25 @@ describe('Utils helper functions', () => {
 
   it('renders displayVisualization function', () => {
     const wrapper1 = mount(
-      <div>
-        {displayVisualization(sampleSavedVisualization.visualization, samplePPLResponse, 'bar')}
-      </div>
+      <div>{displayVisualization(sampleSavedVisualization, samplePPLResponse, 'bar')}</div>
     );
     expect(wrapper1).toMatchSnapshot();
 
     const wrapper2 = mount(
-      <div>{displayVisualization(sampleSavedVisualizationForLine, samplePPLResponse, 'line')}</div>
+      <div>{displayVisualization(sampleSavedVisualization, samplePPLResponse, 'line')}</div>
     );
     expect(wrapper2).toMatchSnapshot();
 
-    const wrapper4 = mount(
+    const wrapper3 = mount(
       <div>
-        {displayVisualization(
-          sampleSavedVisualizationForHorizontalBar,
-          samplePPLResponse,
-          'horizontal_bar'
-        )}
+        {displayVisualization(sampleSavedVisualization, samplePPLResponse, 'horizontal_bar')}
       </div>
     );
-    expect(wrapper4).toMatchSnapshot();
+    expect(wrapper3).toMatchSnapshot();
 
-    const wrapper6 = mount(
+    const wrapper4 = mount(
       <div>{displayVisualization({}, samplePPLEmptyResponse, 'horizontal_bar')}</div>
     );
-    expect(wrapper6).toMatchSnapshot();
+    expect(wrapper4).toMatchSnapshot();
   });
 });

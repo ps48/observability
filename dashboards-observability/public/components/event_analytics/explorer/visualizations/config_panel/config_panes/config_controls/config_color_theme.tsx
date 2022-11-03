@@ -47,11 +47,10 @@ export const ConfigColorTheme = ({
   ).map((item) => ({
     ...item,
     label: vis.name === VIS_CHART_TYPES.Histogram ? item.name : getPropName(item),
-    className: 'color-theme-combo-box-option',
   }));
 
   const getUpdatedOptions = () =>
-    options.filter((option) => !vizState.some((vizOpt) => option.label === vizOpt?.name?.label));
+    options.filter((option) => !vizState.some((vizOpt) => option.name === vizOpt?.name?.name));
 
   const handleAddColorTheme = useCallback(() => {
     const res = isEmpty(vizState) ? [] : vizState;

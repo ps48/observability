@@ -22,13 +22,13 @@ import {
   StatsAggregationFunctionChunk,
   GroupByChunk,
   GroupField,
-  StatsChunk,
+  statsChunk,
   SpanExpressionChunk,
 } from '../types';
 import { CUSTOM_LABEL } from '../../../../common/constants/explorer';
 
 export class StatsBuilder implements QueryBuilder<Aggregations> {
-  constructor(private statsChunk: StatsChunk) {}
+  constructor(private statsChunk: statsChunk) {}
 
   build(): Aggregations {
     // return a new stats subtree

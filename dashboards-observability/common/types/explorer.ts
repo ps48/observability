@@ -46,12 +46,6 @@ export interface IField {
   label?: string;
 }
 
-export interface TimeUnit {
-  name: string;
-  label: string;
-  value: string;
-}
-
 export interface ExplorerFields {
   availableFields: IField[];
   queriedFields: IField[];
@@ -147,8 +141,8 @@ export interface SavedQuery {
   name: string;
   query: string;
   selected_date_range: { start: string; end: string; text: string };
-  selected_fields: { text: string; tokens: IField[] };
-  selected_timestamp: IField;
+  selected_fields: { text: string; tokens: [{ name: string; type: string }] };
+  selected_timestamp: { name: string; type: string };
 }
 
 export interface SavedVisualization {
@@ -157,7 +151,7 @@ export interface SavedVisualization {
   query: string;
   selected_date_range: { start: string; end: string; text: string };
   selected_fields: { text: string; tokens: [] };
-  selected_timestamp: IField;
+  selected_timestamp: { name: string; type: string };
   type: string;
   application_id?: string;
 }
@@ -184,6 +178,7 @@ export interface ExplorerDataType {
 }
 
 export interface Query {
+  finalQuery: string;
   index: string;
   isLoaded: boolean;
   objectType: string;
@@ -192,7 +187,6 @@ export interface Query {
   selectedDateRange: string[];
   selectedTimestamp: string;
   tabCreatedType: string;
-  finalQuery?: string;
 }
 
 export interface ExplorerData {
@@ -284,11 +278,6 @@ export interface LiveTailProps {
   dataTestSubj: string;
 }
 
-export interface PatternTableData {
-  count: number;
-  pattern: string;
-  sampleLog: string;
-};
 export interface ConfigListEntry {
   label: string;
   aggregation: string;
@@ -305,9 +294,9 @@ export interface HistogramConfigList {
 }
 
 export interface DimensionSpan {
-  time_field: IField[];
+  time_field: IField;
   interval: number;
-  unit: TimeUnit[];
+  unit: string;
 }
 
 export interface ConfigList {
@@ -363,22 +352,10 @@ export interface TreemapParentsProps {
 
 export interface DataConfigPanelFieldProps {
   list: ConfigListEntry[];
-  dimensionSpan: DimensionSpan;
   sectionName: string;
   visType: VIS_CHART_TYPES;
   addButtonText: string;
   handleServiceAdd: (name: string) => void;
   handleServiceRemove: (index: number, name: string) => void;
-  handleServiceEdit: (arrIndex: number, sectionName: string, isTimeStamp: boolean) => void;
-}
-
-export interface VisMeta {
-  visId: string;
-}
-
-export interface VisualizationState {
-  query: Query;
-  visData: any;
-  visConfMetadata: ConfigList;
-  visMeta: VisMeta;
+  handleServiceEdit: (isClose: boolean, arrIndex: number, sectionName: string) => void;
 }

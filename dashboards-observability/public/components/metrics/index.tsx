@@ -28,6 +28,7 @@ import { MetricsGrid } from './view/metrics_grid';
 import { useSelector } from 'react-redux';
 import { metricsLayoutSelector, selectedMetricsSelector } from './redux/slices/metrics_slice';
 import { resolutionOptions } from '../../../common/constants/metrics';
+import SavedObjects from '../../services/saved_objects/event_analytics/saved_objects';
 
 interface MetricsProps {
   http: CoreStart['http'];
@@ -35,9 +36,17 @@ interface MetricsProps {
   parentBreadcrumb: ChromeBreadcrumb;
   renderProps: RouteComponentProps<any, StaticContext, any>;
   pplService: PPLService;
+  savedObjects: SavedObjects;
 }
 
-export const Home = ({ http, chrome, parentBreadcrumb, renderProps, pplService }: MetricsProps) => {
+export const Home = ({
+  http,
+  chrome,
+  parentBreadcrumb,
+  renderProps,
+  pplService,
+  savedObjects,
+}: MetricsProps) => {
   // Redux tools
   const selectedMetrics = useSelector(selectedMetricsSelector);
   const metricsLayout = useSelector(metricsLayoutSelector);
@@ -99,9 +108,9 @@ export const Home = ({ http, chrome, parentBreadcrumb, renderProps, pplService }
     setPanelVisualizations(metricsLayout);
   }, [metricsLayout]);
 
-  useEffect(() => {
-    if (editMode) setIsTopPanelDisabled(true);
-  }, [editMode]);
+  // useEffect(() => {
+  //   editMode ? setIsTopPanelDisabled(true) : setIsTopPanelDisabled(false);
+  // }, [editMode]);
 
   const mainSectionClassName = classNames({
     'col-md-9': !isSidebarClosed,
@@ -118,6 +127,7 @@ export const Home = ({ http, chrome, parentBreadcrumb, renderProps, pplService }
             <EuiPage>
               <EuiPageBody component="div">
                 <TopMenu
+                  http={http}
                   IsTopPanelDisabled={IsTopPanelDisabled}
                   startTime={startTime}
                   endTime={endTime}
@@ -133,6 +143,7 @@ export const Home = ({ http, chrome, parentBreadcrumb, renderProps, pplService }
                   spanValue={spanValue}
                   setSpanValue={setSpanValue}
                   resolutionSelectId={resolutionSelectId}
+                  savedObjects={savedObjects}
                 />
                 <div className="dscAppContainer">
                   <div className="col-md-3 dscSidebar__container dscCollapsibleSidebar">

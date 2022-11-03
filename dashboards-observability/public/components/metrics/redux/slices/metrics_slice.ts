@@ -8,7 +8,12 @@ import {
   PPL_PROMETHEUS_CATALOG_REQUEST,
   REDUX_SLICE_METRICS,
 } from '../../../../../common/constants/metrics';
-import { pplServiceRequestor, getVisualizations, getNewVizDimensions } from '../../helpers/utils';
+import {
+  pplServiceRequestor,
+  getVisualizations,
+  getNewVizDimensions,
+  sortMetricLayout,
+} from '../../helpers/utils';
 import PPLService from '../../../../services/requests/ppl';
 import { MetricType } from '../../../../../common/types/metrics';
 
@@ -29,15 +34,12 @@ export const loadMetrics = createAsyncThunk('metrics/loadData', async (services:
 
 const fetchCustomMetrics = async (http: any) => {
   const dataSet = await getVisualizations(http);
-  const savedMetrics = dataSet.observabilityObjectList.filter(
-    (obj: any) => obj.savedVisualization.sub_type === 'metric'
-  );
-  const normalizedData = savedMetrics.map((obj: any) => ({
-    id: obj.objectId,
-    name: obj.savedVisualization.name,
+
+  const normalizedData = dataSet.visualizations.map((obj: any) => ({
+    id: obj.id,
+    name: obj.name,
     catalog: 'CUSTOM_METRICS',
-    type: obj.savedVisualization.type,
-    recentlyCreated: (Date.now() - obj.createdTimeMs) / 36e5 <= 12,
+    type: obj.type,
   }));
   return normalizedData;
 };
@@ -55,7 +57,6 @@ const fetchRemoteMetrics = async (pplService: any) => {
       name: `${obj.TABLE_CATALOG}.${obj.TABLE_NAME}`,
       catalog: `${catalog.CATALOG_NAME}`,
       type: obj.TABLE_TYPE,
-      recentlyCreated: false,
     }));
     dataSet.push(normalizedData);
   }
@@ -78,11 +79,7 @@ const updateLayoutBySelection = (state: any, newMetric: any) => {
 };
 
 const updateLayoutByDeSelection = (state: any, newMetric: any) => {
-  const sortedMetricsLayout = state.metricsLayout.sort((a: MetricType, b: MetricType) => {
-    if (a.y > b.y) return 1;
-    if (a.y < b.y) return -1;
-    else return 0;
-  });
+  const sortedMetricsLayout = sortMetricLayout(state.metricsLayout);
 
   let newMetricsLayout = [] as MetricType[];
   let heightSubtract = 0;
@@ -126,20 +123,10 @@ export const { deSelectMetric, selectMetric, updateMetricsLayout } = metricSlice
 export const metricsStateSelector = (state) => state.metrics;
 
 export const availableMetricsSelector = (state) =>
-  state.metrics.metrics.filter(
-    (metric) => !state.metrics.selected.includes(metric.id) && !metric.recentlyCreated
-  );
+  state.metrics.metrics.filter((metric) => !state.metrics.selected.includes(metric.id));
 
 export const selectedMetricsSelector = (state) =>
   state.metrics.metrics.filter((metric) => state.metrics.selected.includes(metric.id));
-
-export const recentlyCreatedMetricsSelector = (state) =>
-  state.metrics.metrics.filter(
-    (metric) => !state.metrics.selected.includes(metric.id) && metric.recentlyCreated
-  );
-
-export const allAvailableMetricsSelector = (state) =>
-  state.metrics.metrics.filter((metric) => !state.metrics.selected.includes(metric.id));
 
 export const metricsLayoutSelector = (state) => state.metrics.metricsLayout;
 

@@ -21,7 +21,6 @@ import { IVisualizationContainerProps } from '../../../../../common/types/explor
 import { EmptyPlaceholder } from '../../../event_analytics/explorer/visualizations/shared_components/empty_placeholder';
 import { Plt } from '../../plotly/plot';
 import { AGGREGATIONS, GROUPBY } from '../../../../../common/constants/explorer';
-import { PLOT_MARGIN } from '../../../../../common/constants/shared';
 
 export const HeatMap = ({ visualizations, layout, config }: any) => {
   const {
@@ -33,26 +32,17 @@ export const HeatMap = ({ visualizations, layout, config }: any) => {
         data: queriedVizData,
         metadata: { fields },
       },
-      userConfigs: {
-        dataConfig: {
-          chartStyles = {},
-          legend = {},
-          tooltipOptions = {},
-          panelOptions = {},
-          [GROUPBY]: dimensions = [],
-          [AGGREGATIONS]: series = [],
-        } = {},
-        layoutConfig = {},
-      } = {},
-    } = {},
-    vis: { icontype },
+      userConfigs,
+    },
+    vis: visMetaData,
   }: IVisualizationContainerProps = visualizations;
+  const { dataConfig = {}, layoutConfig = {} } = userConfigs;
 
-  if (fields.length < 3) return <EmptyPlaceholder icon={icontype} />;
+  if (fields.length < 3) return <EmptyPlaceholder icon={visMetaData?.icontype} />;
 
-  const xaxisField = dimensions[0];
-  const yaxisField = dimensions[1];
-  const zMetrics = series[0];
+  const xaxisField = dataConfig[GROUPBY][0];
+  const yaxisField = dataConfig[GROUPBY][1];
+  const zMetrics = dataConfig[AGGREGATIONS][0];
 
   if (
     isEmpty(xaxisField) ||
@@ -61,25 +51,30 @@ export const HeatMap = ({ visualizations, layout, config }: any) => {
     isEmpty(queriedVizData[xaxisField.label]) ||
     isEmpty(queriedVizData[yaxisField.label]) ||
     isEmpty(queriedVizData[getPropName(zMetrics)]) ||
-    dimensions.length > 2 ||
-    series.length > 1
+    dataConfig[GROUPBY].length > 2 ||
+    dataConfig[AGGREGATIONS].length > 1
   )
-    return <EmptyPlaceholder icon={icontype} />;
+    return <EmptyPlaceholder icon={visMetaData?.icontype} />;
 
   const uniqueYaxis = uniq(queriedVizData[yaxisField.label]);
   const uniqueXaxis = uniq(queriedVizData[xaxisField.label]);
   const uniqueYaxisLength = uniqueYaxis.length;
   const uniqueXaxisLength = uniqueXaxis.length;
   const tooltipMode =
-    tooltipOptions.tooltipMode !== undefined ? tooltipOptions.tooltipMode : 'show';
-  const tooltipText = tooltipOptions.tooltipText !== undefined ? tooltipOptions.tooltipText : 'all';
+    dataConfig?.tooltipOptions?.tooltipMode !== undefined
+      ? dataConfig.tooltipOptions.tooltipMode
+      : 'show';
+  const tooltipText =
+    dataConfig?.tooltipOptions?.tooltipText !== undefined
+      ? dataConfig.tooltipOptions.tooltipText
+      : 'all';
 
-  const colorField = chartStyles
-    ? chartStyles.colorMode && chartStyles.colorMode[0].name === OPACITY
-      ? chartStyles.color ?? HEATMAP_SINGLE_COLOR
-      : chartStyles.scheme ?? HEATMAP_PALETTE_COLOR
+  const colorField = dataConfig?.chartStyles
+    ? dataConfig?.chartStyles.colorMode && dataConfig?.chartStyles.colorMode[0].name === OPACITY
+      ? dataConfig?.chartStyles.color ?? HEATMAP_SINGLE_COLOR
+      : dataConfig?.chartStyles.scheme ?? HEATMAP_PALETTE_COLOR
     : HEATMAP_PALETTE_COLOR;
-  const showColorscale = legend.showLegend ?? 'show';
+  const showColorscale = dataConfig?.legend?.showLegend ?? 'show';
 
   const traceColor: any = [];
   if (colorField.name === SINGLE_COLOR_PALETTE) {
@@ -144,12 +139,10 @@ export const HeatMap = ({ visualizations, layout, config }: any) => {
     },
   ];
 
-  layout.yaxis = { autosize: true, automargin: true };
   const mergedLayout = {
     ...layout,
     ...(layoutConfig.layout && layoutConfig.layout),
-    title: panelOptions.title || layoutConfig.layout?.title || '',
-    margin: PLOT_MARGIN,
+    title: dataConfig?.panelOptions?.title || layoutConfig.layout?.title || '',
   };
 
   const mergedConfigs = useMemo(

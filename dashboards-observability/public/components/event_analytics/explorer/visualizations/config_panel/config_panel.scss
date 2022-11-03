@@ -32,10 +32,7 @@ $vis-editor-sidebar-min-width: 350px;
 }
 
 .visEditorSidebar__config {
-  @include euiYScrollWithShadows;
   padding: $euiSizeS;
-  overflow-y: auto;
-  height: calc(100vh - 398px);
 }
 
 .visEditorSidebar__config-isHidden {
@@ -191,8 +188,4 @@ $vis-editor-sidebar-min-width: 350px;
 
 .panel_title:first-letter {
   text-transform: uppercase;
-}
-
-.color-theme-combo-box-option .euiFlexItem.euiFlexItem--flexGrowZero {
-  display: none;
 }

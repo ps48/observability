@@ -103,7 +103,7 @@ export const createLineTypeDefinition = (params: any = {}) => ({
             options: [
               { name: 'All', id: 'all' },
               { name: 'Dimension', id: 'x' },
-              { name: 'Series', id: 'y' },
+              { name: 'Metrics', id: 'y' },
             ],
             defaultSelections: [{ name: 'All', id: 'all' }],
           }),
@@ -222,10 +222,11 @@ export const createLineTypeDefinition = (params: any = {}) => ({
         ],
       },
       {
-        id: 'availability-panel',
-        name: 'Availability',
-        mapTo: 'availabilityConfig',
-        editor: ConfigAvailability,
+        id: 'style-panel',
+        name: 'Layout',
+        mapTo: 'layoutConfig',
+        editor: ConfigEditor,
+        content: [],
       },
       {
         id: 'availability-panel',

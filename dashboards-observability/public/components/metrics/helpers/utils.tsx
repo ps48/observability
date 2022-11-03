@@ -7,19 +7,30 @@ import dateMath from '@elastic/datemath';
 import { ShortDate } from '@elastic/eui';
 import { DurationRange } from '@elastic/eui/src/components/date_picker/types';
 import _ from 'lodash';
+import { Moment } from 'moment-timezone';
 import React from 'react';
-import { Layout } from 'react-grid-layout';
-import { VISUALIZATION, SAVED_VISUALIZATION } from '../../../../common/constants/metrics';
-import {
-  EVENT_ANALYTICS,
-  OBSERVABILITY_BASE,
-  SAVED_OBJECTS,
-} from '../../../../common/constants/shared';
+import { CUSTOM_PANELS_API_PREFIX } from '../../../../common/constants/custom_panels';
+import { PPL_DATE_FORMAT } from '../../../../common/constants/shared';
 import PPLService from '../../../services/requests/ppl';
 import { CoreStart } from '../../../../../../src/core/public';
 import { MetricType } from '../../../../common/types/metrics';
+import { Layout } from 'react-grid-layout';
 import { VisualizationType } from '../../../../common/types/custom_panels';
 import { DEFAULT_METRIC_HEIGHT, DEFAULT_METRIC_WIDTH } from '../../../../common/constants/metrics';
+import { updateQuerySpanInterval } from '../../custom_panels/helpers/utils';
+import { UNITS_OF_MEASURE } from '../../../../common/constants/explorer';
+
+export const convertDateTime = (datetime: string, isStart = true, formatted = true) => {
+  let returnTime: undefined | Moment;
+  if (isStart) {
+    returnTime = dateMath.parse(datetime);
+  } else {
+    returnTime = dateMath.parse(datetime, { roundUp: true });
+  }
+
+  if (formatted) return returnTime!.format(PPL_DATE_FORMAT);
+  return returnTime;
+};
 
 export const onTimeChange = (
   start: ShortDate,
@@ -41,20 +52,16 @@ export const onTimeChange = (
 
 // PPL Service requestor
 export const pplServiceRequestor = (pplService: PPLService, finalQuery: string) => {
-  return pplService.fetch({ query: finalQuery, format: VISUALIZATION }).catch((error: Error) => {
+  return pplService.fetch({ query: finalQuery, format: 'viz' }).catch((error: Error) => {
     console.error(error);
   });
 };
 
 // Observability backend to fetch visualizations/custom metrics
 export const getVisualizations = (http: CoreStart['http']) => {
-  return http
-    .get(`${OBSERVABILITY_BASE}${EVENT_ANALYTICS}${SAVED_OBJECTS}`, {
-      query: { objectType: [SAVED_VISUALIZATION] },
-    })
-    .catch((err) => {
-      console.error('Issue in fetching all saved visualizations', err);
-    });
+  return http.get(`${CUSTOM_PANELS_API_PREFIX}/visualizations/`).catch((err) => {
+    console.error('Issue in fetching all saved visualizations', err);
+  });
 };
 
 interface boxType {
@@ -92,7 +99,7 @@ const getTotalOverlapArea = (panelVisualizations: MetricType[]) => {
   return isOverlapping;
 };
 
-// We want to check if the new visualization being added, can be placed at { x: 0, y: 0, w: 6, h: 4 };
+// We want to check if the new visualization being added, can be placed at { x: 0, y: 0, w: DEFAULT_METRIC_WIDTH, h: DEFAULT_METRIC_HEIGHT };
 // To check this we try to calculate overlap between all the current visualizations and new visualization
 // if there is no overalap (i.e Total Overlap Area is 0), we place the new viz. in default position
 // else, we add it to the bottom of the panel
@@ -160,4 +167,53 @@ export const mergeLayoutAndMetrics = (
     }
   }
   return newPanelVisualizations;
+};
+
+export const sortMetricLayout = (metricsLayout: MetricType[]) => {
+  return metricsLayout.sort((a: MetricType, b: MetricType) => {
+    if (a.y > b.y) return 1;
+    if (a.y < b.y) return -1;
+    else return 0;
+  });
+};
+
+export const createPrometheusMetricById = (metricId: string) => {
+  return {
+    name: '[Prometheus Metric] ' + metricId,
+    description: '',
+    query: 'source = ' + metricId + ' | stats avg(@value) by span(@timestamp,1h)',
+    type: 'line',
+    timeField: '@timestamp',
+    selected_fields: {
+      text: '',
+      tokens: [],
+    },
+    sub_type: 'metric',
+    units_of_measure: UNITS_OF_MEASURE[1],
+    user_configs: {},
+  };
+};
+
+export const updateMetricsWithSelections = (
+  savedVisualization: any,
+  startTime: ShortDate,
+  endTime: ShortDate,
+  spanValue: string
+) => {
+  return {
+    query: updateQuerySpanInterval(
+      savedVisualization.query,
+      savedVisualization.timeField,
+      spanValue
+    ),
+    fields: savedVisualization.selected_fields.tokens,
+    dateRange: [startTime, endTime],
+    timestamp: savedVisualization.timeField,
+    name: savedVisualization.name,
+    description: savedVisualization.description,
+    type: 'line',
+    subType: 'metric',
+    userConfigs: JSON.stringify(savedVisualization.user_configs),
+    unitsOfMeasure: savedVisualization.units_of_measure,
+  };
 };

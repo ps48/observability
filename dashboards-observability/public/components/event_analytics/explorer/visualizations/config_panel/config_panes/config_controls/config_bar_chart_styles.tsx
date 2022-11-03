@@ -21,18 +21,12 @@ export const ConfigBarChartStyles = ({
   const { data: vizData = {}, metadata: { fields = [] } = {} } = data?.rawVizData;
 
   const handleConfigurationChange = useCallback(
-    (stateFieldName, max) => {
+    (stateFieldName) => {
       return (changes) => {
-        if (!max || changes <= max) {
-          handleConfigChange({
-            ...vizState,
-            [stateFieldName]: changes,
-          });
-        } else {
-          handleConfigChange({
-            ...vizState,
-          });
-        }
+        handleConfigChange({
+          ...vizState,
+          [stateFieldName]: changes,
+        });
       };
     },
     [handleConfigChange, vizState]
@@ -74,7 +68,7 @@ export const ConfigBarChartStyles = ({
                 label: btn.name,
               })),
               idSelected: vizState[schema.mapTo] || schema?.props?.defaultSelections[0]?.id,
-              handleButtonChange: handleConfigurationChange(schema.mapTo, schema?.props?.max),
+              handleButtonChange: handleConfigurationChange(schema.mapTo),
             };
             return createDimensionComponent(params);
           }
@@ -82,7 +76,7 @@ export const ConfigBarChartStyles = ({
             params = {
               title: schema.name,
               numValue: vizState[schema.mapTo] || '',
-              handleInputChange: handleConfigurationChange(schema.mapTo, schema?.props?.max),
+              handleInputChange: handleConfigurationChange(schema.mapTo),
               vizState,
               ...schema.props,
             };
@@ -97,7 +91,7 @@ export const ConfigBarChartStyles = ({
               currentRange: vizState[schema.mapTo] || schema?.defaultState,
               ticks: schema?.props?.ticks,
               showTicks: schema?.props?.showTicks || false,
-              handleSliderChange: handleConfigurationChange(schema.mapTo, schema?.props?.max),
+              handleSliderChange: handleConfigurationChange(schema.mapTo),
             };
             return createDimensionComponent(params);
           }

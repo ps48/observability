@@ -53,7 +53,6 @@ import { addTab, selectQueryTabs } from '../redux/slices/query_tab_slice';
 import { init as initFields } from '../redux/slices/field_slice';
 import { init as initQuery, changeQuery } from '../redux/slices/query_slice';
 import { init as initQueryResult, selectQueryResult } from '../redux/slices/query_result_slice';
-import { init as initPatterns } from '../redux/slices/patterns_slice';
 import { SavedQueryTable } from './saved_objects_table';
 import { selectQueries } from '../redux/slices/query_slice';
 import { setSelectedQueryTab } from '../redux/slices/query_tab_slice';
@@ -153,7 +152,6 @@ export const Home = (props: IHomeProps) => {
       dispatch(initQueryResult({ tabId }));
       dispatch(initFields({ tabId }));
       dispatch(addTab({ tabId }));
-      dispatch(initPatterns({ tabId }));
     });
 
     return tabId;

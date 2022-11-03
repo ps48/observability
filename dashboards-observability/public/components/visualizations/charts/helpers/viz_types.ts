@@ -10,7 +10,6 @@ import {
   GROUPBY,
   PARENTFIELDS,
   SIMILAR_VIZ_TYPES,
-  TIMESTAMP,
   TIME_INTERVAL_OPTIONS,
 } from '../../../../../common/constants/explorer';
 import { VIS_CHART_TYPES } from '../../../../../common/constants/shared';
@@ -22,7 +21,6 @@ import {
   IVisualizationContainerProps,
 } from '../../../../../common/types/explorer';
 import { getVisType } from '../vis_types';
-import { statsChunk } from '../../../../../common/query_manager/ast/types/stats';
 interface IVizContainerProps {
   vizId: string;
   appData?: { fromApp: boolean };
@@ -84,30 +82,6 @@ const getStandardedOuiField = (name?: string, type?: string) => ({
   type,
 });
 
-const getStandardUnitField = (name?: string, value?: string) => ({
-  name,
-  label: name,
-  value,
-});
-
-const getSpanValue = (statsTokens: statsChunk) => {
-  const fieldInfo = statsTokens.groupby?.span?.span_expression?.field;
-  const timeUnit = TIME_INTERVAL_OPTIONS.find(
-    (time_unit) => time_unit.value === statsTokens.groupby?.span?.span_expression?.time_unit
-  );
-  return {
-    span: {
-      time_field: statsTokens.groupby?.span?.span_expression?.field
-        ? [getStandardedOuiField(fieldInfo, TIMESTAMP)]
-        : [],
-      interval: statsTokens.groupby?.span?.span_expression?.literal_value ?? '0',
-      unit: statsTokens.groupby?.span?.span_expression?.time_unit
-        ? [getStandardUnitField(timeUnit?.text, timeUnit?.value)]
-        : [],
-    },
-  };
-};
-
 const defaultUserConfigs = (queryString, visualizationName: string) => {
   let tempUserConfigs = {};
   const qm = new QueryManager();
@@ -118,10 +92,24 @@ const defaultUserConfigs = (queryString, visualizationName: string) => {
       [GROUPBY]: [],
     };
   } else {
+    const fieldInfo = statsTokens.groupby?.span?.span_expression?.field;
     tempUserConfigs = {
-      ...(statsTokens.groupby !== '' &&
-        statsTokens.groupby?.span !== null &&
-        getSpanValue(statsTokens)),
+      span: {
+        time_field: statsTokens.groupby?.span?.span_expression?.field
+          ? [getStandardedOuiField(fieldInfo, 'timestamp')]
+          : [],
+        interval: statsTokens.groupby?.span?.span_expression?.literal_value ?? '0',
+        unit: statsTokens.groupby?.span?.span_expression?.time_unit
+          ? [
+              getStandardedOuiField(
+                TIME_INTERVAL_OPTIONS.find(
+                  (time_unit) =>
+                    time_unit.value === statsTokens.groupby?.span.span_expression.time_unit
+                )?.text
+              ),
+            ]
+          : [],
+      },
     };
     if (visualizationName === VIS_CHART_TYPES.LogsView) {
       const dimensions = statsTokens.aggregations
@@ -166,9 +154,9 @@ const defaultUserConfigs = (queryString, visualizationName: string) => {
           name: agg.function?.value_expression,
           aggregation: agg.function?.name,
         })),
-        [GROUPBY]: statsTokens.groupby?.group_fields?.map((dimension) => ({
-          label: dimension.name ?? '',
-          name: dimension.name ?? '',
+        [GROUPBY]: statsTokens.groupby?.group_fields?.map((agg) => ({
+          label: agg.name ?? '',
+          name: agg.name ?? '',
         })),
       };
     }
@@ -272,6 +260,9 @@ export const getVizContainerProps = ({
       ? { ...getVisType(vizId, { type: vizId }) }
       : { ...getVisType(vizId) };
 
+  const userSetConfigs = isEmpty(query)
+    ? userConfigs
+    : getUserConfigs(userConfigs, rawVizData?.metadata?.fields, getVisTypeData(vizId).name, query);
   return {
     data: {
       appData: { ...appData },
@@ -279,7 +270,7 @@ export const getVizContainerProps = ({
       query: { ...query },
       indexFields: { ...indexFields },
       userConfigs: {
-        ...userConfigs,
+        ...userSetConfigs,
       },
       defaultAxes: {
         ...getDefaultXYAxisLabels(rawVizData?.metadata?.fields, getVisTypeData(vizId).name),

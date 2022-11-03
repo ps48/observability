@@ -16,13 +16,10 @@ interface ISidebarProps {
   query: string;
   explorerFields: IExplorerFields;
   explorerData: any;
-  selectedPattern: string;
-  isOverridingPattern: boolean;
   selectedTimestamp: string;
   isOverridingTimestamp: boolean;
   isFieldToggleButtonDisabled: boolean;
-  handleOverridePattern: (pattern: IField) => void;
-  handleOverrideTimestamp: (timestamp: IField) => void;
+  handleOverrideTimestamp: (timestamp: { name: string; type: string }) => void;
   handleAddField: (field: IField) => void;
   handleRemoveField: (field: IField) => void;
 }
@@ -32,12 +29,9 @@ export const Sidebar = (props: ISidebarProps) => {
     query,
     explorerFields,
     explorerData,
-    selectedPattern,
-    isOverridingPattern,
     selectedTimestamp,
     isOverridingTimestamp,
     isFieldToggleButtonDisabled,
-    handleOverridePattern,
     handleOverrideTimestamp,
     handleAddField,
     handleRemoveField,
@@ -93,10 +87,6 @@ export const Sidebar = (props: ISidebarProps) => {
                             <Field
                               query={query}
                               field={field}
-                              selectedPattern={selectedPattern}
-                              isOverridingPattern={isOverridingPattern}
-                              handleOverridePattern={handleOverridePattern}
-                              isOverridingTimestamp={isOverridingTimestamp}
                               selectedTimestamp={selectedTimestamp}
                               handleOverrideTimestamp={handleOverrideTimestamp}
                               selected={true}
@@ -139,9 +129,6 @@ export const Sidebar = (props: ISidebarProps) => {
                           <Field
                             query={query}
                             field={field}
-                            selectedPattern={selectedPattern}
-                            isOverridingPattern={isOverridingPattern}
-                            handleOverridePattern={handleOverridePattern}
                             selectedTimestamp={selectedTimestamp}
                             isOverridingTimestamp={isOverridingTimestamp}
                             handleOverrideTimestamp={handleOverrideTimestamp}
@@ -186,9 +173,6 @@ export const Sidebar = (props: ISidebarProps) => {
                             <Field
                               query={query}
                               field={field}
-                              selectedPattern={selectedPattern}
-                              isOverridingPattern={isOverridingPattern}
-                              handleOverridePattern={handleOverridePattern}
                               selectedTimestamp={selectedTimestamp}
                               isOverridingTimestamp={isOverridingTimestamp}
                               handleOverrideTimestamp={handleOverrideTimestamp}

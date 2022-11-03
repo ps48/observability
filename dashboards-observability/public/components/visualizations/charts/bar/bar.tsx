@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { find, isEmpty, last, some } from 'lodash';
 import React, { useMemo } from 'react';
-import { isEmpty, last } from 'lodash';
 import {
   AGGREGATIONS,
-  BREAKDOWNS,
   DEFAULT_BAR_CHART_STYLES,
+  BREAKDOWNS,
   GROUPBY,
 } from '../../../../../common/constants/explorer';
 import {
@@ -18,178 +18,176 @@ import {
   PLOTLY_COLOR,
   THRESHOLD_LINE_OPACITY,
   THRESHOLD_LINE_WIDTH,
-  PLOT_MARGIN,
 } from '../../../../../common/constants/shared';
 import { IVisualizationContainerProps } from '../../../../../common/types/explorer';
 import { AvailabilityUnitType } from '../../../event_analytics/explorer/visualizations/config_panel/config_panes/config_controls/config_availability';
 import { ThresholdUnitType } from '../../../event_analytics/explorer/visualizations/config_panel/config_panes/config_controls/config_thresholds';
 import { EmptyPlaceholder } from '../../../event_analytics/explorer/visualizations/shared_components/empty_placeholder';
-import { hexToRgb } from '../../../event_analytics/utils/utils';
+import { getPropName, hexToRgb } from '../../../event_analytics/utils/utils';
 import { Plt } from '../../plotly/plot';
-import { transformPreprocessedDataToTraces, preprocessJsonData } from '../shared/common';
 
 export const Bar = ({ visualizations, layout, config }: any) => {
   const {
     data: {
+      defaultAxes,
+      indexFields,
+      query,
       rawVizData: {
         data: queriedVizData,
-        jsonData,
         metadata: { fields },
       },
-      userConfigs: {
-        dataConfig: {
-          colorTheme = [],
-          chartStyles = {},
-          span = {},
-          legend = {},
-          panelOptions = {},
-          tooltipOptions = {},
-          [GROUPBY]: dimensions = [],
-          [AGGREGATIONS]: series = [],
-          [BREAKDOWNS]: breakdowns = [],
-        } = {},
-        layoutConfig = {},
-        availabilityConfig = {},
-      } = {},
+      userConfigs,
     },
-    vis: {
-      type,
-      icontype,
-      fillopacity,
-      orientation,
-      labelangle,
-      linewidth,
-      barwidth,
-      groupwidth,
-      showlegend,
-      legendposition,
-    },
+    vis: visMetaData,
   }: IVisualizationContainerProps = visualizations;
-
   const lastIndex = fields.length - 1;
+  const { dataConfig = {}, layoutConfig = {}, availabilityConfig = {} } = userConfigs;
 
   /**
    * determine stylings
    */
-  const barOrientation = chartStyles.orientation || orientation;
+  const barOrientation = dataConfig.chartStyles?.orientation || visMetaData.orientation;
   const isVertical = barOrientation === BarOrientation.vertical;
-  const tickAngle = chartStyles.rotateBarLabels || labelangle;
-  const lineWidth = chartStyles.lineWidth || linewidth;
+
+  const tickAngle = dataConfig?.chartStyles?.rotateBarLabels || visMetaData.labelangle;
+  const lineWidth = dataConfig?.chartStyles?.lineWidth || visMetaData.linewidth;
   const fillOpacity =
-    chartStyles.fillOpacity !== undefined
-      ? chartStyles.fillOpacity / FILLOPACITY_DIV_FACTOR
-      : fillopacity / FILLOPACITY_DIV_FACTOR;
-  const tooltipMode =
-    tooltipOptions.tooltipMode !== undefined ? tooltipOptions.tooltipMode : 'show';
-  const tooltipText = tooltipOptions.tooltipText !== undefined ? tooltipOptions.tooltipText : 'all';
-  const barWidth = 1 - (chartStyles.barWidth || barwidth);
-  const groupWidth = 1 - (chartStyles.groupWidth || groupwidth);
-  const showLegend = legend.showLegend ?? showlegend;
-  const legendPosition = legend.position || legendposition;
-  const labelSize = chartStyles.labelSize || DEFAULT_BAR_CHART_STYLES.LabelSize;
-  const legendSize = legend.legendSize;
+    dataConfig?.chartStyles?.fillOpacity !== undefined
+      ? dataConfig?.chartStyles?.fillOpacity / FILLOPACITY_DIV_FACTOR
+      : visMetaData.fillopacity / FILLOPACITY_DIV_FACTOR;
+  const barWidth = 1 - (dataConfig?.chartStyles?.barWidth || visMetaData.barwidth);
+  const groupWidth = 1 - (dataConfig?.chartStyles?.groupWidth || visMetaData.groupwidth);
+  const showLegend = !(
+    dataConfig?.legend?.showLegend && dataConfig.legend.showLegend !== visMetaData.showlegend
+  );
+  const legendPosition = dataConfig?.legend?.position || visMetaData.legendposition;
+  const labelSize = dataConfig?.chartStyles?.labelSize || DEFAULT_BAR_CHART_STYLES.LabelSize;
+  const legendSize = dataConfig?.legend?.legendSize;
   const getSelectedColorTheme = (field: any, index: number) =>
-    (colorTheme.length > 0 &&
-      colorTheme.find((colorSelected) => colorSelected.name.label === field)?.color) ||
+    (dataConfig?.colorTheme?.length > 0 &&
+      dataConfig.colorTheme.find((colorSelected) => colorSelected.name.name === field)?.color) ||
     PLOTLY_COLOR[index % PLOTLY_COLOR.length];
+
+  let bars;
+
+  /**
+   * determine x axis
+   */
+  const xaxes = useMemo(() => {
+    // breakdown selections
+    if (dataConfig[BREAKDOWNS]) {
+      return [
+        ...dataConfig[GROUPBY].filter(
+          (dimension) =>
+            !some(dataConfig[BREAKDOWNS], (breakdown) => breakdown.label === dimension.label)
+        ),
+      ];
+    }
+
+    // span selection
+    const timestampField = find(fields, (field) => field.type === 'timestamp');
+    if (dataConfig.span && dataConfig.span.time_field && timestampField) {
+      return [timestampField, ...dataConfig[GROUPBY]];
+    }
+
+    return dataConfig[GROUPBY];
+  }, [dataConfig[GROUPBY], dataConfig[BREAKDOWNS]]);
+
+  /**
+   * determine y axis
+   */
+  const yaxes = useMemo(() => {
+    return Array.isArray(dataConfig[AGGREGATIONS]) ? [...dataConfig[AGGREGATIONS]] : [];
+  }, [dataConfig[AGGREGATIONS]]);
+
+  /**
+   * prepare data for visualization, map x-xais to y-xais
+   */
+  const chartAxis = useMemo(() => {
+    return yaxes.length > 0 && Array.isArray(queriedVizData[getPropName(yaxes[0])])
+      ? queriedVizData[getPropName(yaxes[0])].map((_, idx) => {
+          // let combineXaxis = '';
+          const xaxisName = xaxes.map((xaxis) => {
+            return queriedVizData[xaxis.name] && queriedVizData[xaxis.name][idx]
+              ? queriedVizData[xaxis.name][idx]
+              : '';
+          });
+          return xaxisName.join(', ');
+        })
+      : [];
+  }, [queriedVizData, xaxes, yaxes]);
+
+  bars = yaxes?.map((yMetric, idx) => {
+    const selectedColor = getSelectedColorTheme(yMetric.name, idx);
+    const fillColor = hexToRgb(selectedColor, fillOpacity);
+    return {
+      y: isVertical ? queriedVizData[getPropName(yMetric)] : chartAxis,
+      x: isVertical ? chartAxis : queriedVizData[getPropName(yMetric)],
+      type: visMetaData.type,
+      marker: {
+        color: fillColor,
+        line: {
+          color: selectedColor,
+          width: lineWidth,
+        },
+      },
+      name: getPropName(yMetric),
+      orientation: barOrientation,
+    };
+  });
+
+  if (
+    isEmpty(queriedVizData) ||
+    !Array.isArray(dataConfig[GROUPBY]) ||
+    !Array.isArray(dataConfig[AGGREGATIONS]) ||
+    (dataConfig[BREAKDOWNS] && !Array.isArray(dataConfig[BREAKDOWNS])) ||
+    yaxes.length === 0
+  )
+    return <EmptyPlaceholder icon={visMetaData?.icontype} />;
+
   // If chart has length of result buckets < 16
   // then use the LONG_CHART_COLOR for all the bars in the chart
   const plotlyColorway =
     queriedVizData[fields[lastIndex].name].length < 16 ? PLOTLY_COLOR : [LONG_CHART_COLOR];
 
-  if (
-    isEmpty(queriedVizData) ||
-    !Array.isArray(dimensions) ||
-    !Array.isArray(series) ||
-    (breakdowns && !Array.isArray(breakdowns))
-  )
-    return <EmptyPlaceholder icon={icontype} />;
-
-  const addStylesToTraces = (traces, traceStyles) => {
-    const { barOrientation, fillOpacity, tooltipMode, tooltipText, lineWidth } = traceStyles;
-    return traces.map((trace, idx: number) => {
-      const selectedColor = getSelectedColorTheme(trace.aggName, idx);
-      return {
-        ...trace,
-        type,
-        orientation: barOrientation,
-        hoverinfo: tooltipMode === 'hidden' ? 'none' : tooltipText,
-        ...{
-          marker: {
-            color: hexToRgb(selectedColor, fillOpacity),
-            line: {
-              color: selectedColor,
-              width: lineWidth,
-            },
-          },
-        },
-      };
-    });
-  };
-
-  let bars = useMemo(() => {
-    const visConfig = {
-      dimensions,
-      series,
-      breakdowns,
-      span,
-      isVertical,
-    };
-    const traceStyles = {
-      barOrientation,
-      fillOpacity,
-      tooltipMode,
-      tooltipText,
-      lineWidth,
-    };
-
-    return addStylesToTraces(
-      transformPreprocessedDataToTraces(preprocessJsonData(jsonData, visConfig), visConfig),
-      { ...traceStyles }
-    );
-  }, [chartStyles, jsonData, dimensions, series, breakdowns, span, tooltipOptions]);
-
-  const mergedLayout = useMemo(() => {
-    return {
-      colorway: plotlyColorway,
-      ...layout,
-      title: panelOptions.title || layoutConfig.layout?.title || '',
-      barmode: chartStyles.mode || visualizations.vis.mode,
-      xaxis: {
-        ...(isVertical && { tickangle: tickAngle }),
-        automargin: true,
-        tickfont: {
-          ...(labelSize && {
-            size: labelSize,
-          }),
-        },
-      },
-      yaxis: {
-        ...(!isVertical && { tickangle: tickAngle }),
-        automargin: true,
-        tickfont: {
-          ...(labelSize && {
-            size: labelSize,
-          }),
-        },
-      },
-      bargap: groupWidth,
-      bargroupgap: barWidth,
-      legend: {
-        ...layout.legend,
-        orientation: legendPosition,
-        ...(legendSize && {
-          font: {
-            size: legendSize,
-          },
+  const mergedLayout = {
+    colorway: plotlyColorway,
+    ...layout,
+    ...(layoutConfig.layout && layoutConfig.layout),
+    title: dataConfig?.panelOptions?.title || layoutConfig.layout?.title || '',
+    barmode: dataConfig?.chartStyles?.mode || visualizations.vis.mode,
+    xaxis: {
+      ...(isVertical && { tickangle: tickAngle }),
+      automargin: true,
+      tickfont: {
+        ...(labelSize && {
+          size: labelSize,
         }),
       },
-      showlegend,
-      hovermode: 'closest',
-      margin: PLOT_MARGIN,
-    };
-  }, [visualizations, layout, panelOptions, showLegend, chartStyles]);
-
+    },
+    yaxis: {
+      ...(!isVertical && { tickangle: tickAngle }),
+      automargin: true,
+      tickfont: {
+        ...(labelSize && {
+          size: labelSize,
+        }),
+      },
+    },
+    bargap: groupWidth,
+    bargroupgap: barWidth,
+    legend: {
+      ...layout.legend,
+      orientation: legendPosition,
+      ...(legendSize && {
+        font: {
+          size: legendSize,
+        },
+      }),
+    },
+    showlegend: showLegend,
+    hovermode: 'closest',
+  };
   if (availabilityConfig.level) {
     const thresholdTraces = {
       x: [],
@@ -198,6 +196,7 @@ export const Bar = ({ visualizations, layout, config }: any) => {
       text: [],
     };
     const levels = availabilityConfig.level ? availabilityConfig.level : [];
+
     const mapToLine = (list: ThresholdUnitType[] | AvailabilityUnitType[], lineStyle: any) => {
       return list.map((thr: ThresholdUnitType) => {
         thresholdTraces.x.push(
@@ -224,7 +223,7 @@ export const Bar = ({ visualizations, layout, config }: any) => {
       });
     };
 
-    mergedLayout.shapes = [...mapToLine(thresholds, { dash: 'dashdot' }), ...mapToLine(levels, {})];
+    mergedLayout.shapes = mapToLine(levels, {});
     bars = [...bars, thresholdTraces];
   }
 
